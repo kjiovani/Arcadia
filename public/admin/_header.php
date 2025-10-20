@@ -19,12 +19,15 @@ require_admin();
     <div class="nav-inner">
       <div class="brand">Arcadia Admin</div>
       <nav>
-        <a href="/arcadia/public/admin/">Dashboard</a> ·
-        <a href="/arcadia/public/admin/games.php">Games</a> ·
-        <a href="/arcadia/public/admin/walkthroughs.php">Walkthroughs</a> ·
-        <a href="/arcadia/public/admin/chapters.php">Chapters</a> ·
-        <a href="/arcadia/public/logout.php">Logout</a>
-      </nav>
+  <a href="/arcadia/public/admin/">Dashboard</a> ·
+  <a href="/arcadia/public/admin/games.php">Games</a> ·
+  <a href="/arcadia/public/admin/walkthroughs.php">Walkthroughs</a> ·
+  <a href="/arcadia/public/admin/chapters.php">Chapters</a> ·
+  <a href="/arcadia/public/admin/tags.php">Tags</a> ·
+  <a href="/arcadia/public/admin/mediafiles.php">Media</a> ·
+  <a href="/arcadia/public/logout.php">Logout</a>
+</nav>
+
     </div>
   </header>
   <div class="container">

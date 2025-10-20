@@ -40,5 +40,5 @@ if ($q !== '') {
   echo '</div>';
 }
 
-include __DIR__ . '/_footer.php';
+
 ?>
