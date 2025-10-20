@@ -10,14 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_verify();
 }
 
-$games   = db_all($mysqli, "SELECT id,title FROM games ORDER BY title ASC");
+$games = db_all($mysqli, "SELECT id,title FROM games ORDER BY title ASC");
 $allTags = db_all($mysqli, "SELECT id,name FROM tags ORDER BY name ASC");
 
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
-    $game_id    = positive_int($_POST['game_id'] ?? 0, 'Game');
-    $title      = required(str_trim($_POST['title'] ?? ''), 'Judul');
-    $overview   = str_trim($_POST['overview'] ?? '');
+    $game_id = positive_int($_POST['game_id'] ?? 0, 'Game');
+    $title = required(str_trim($_POST['title'] ?? ''), 'Judul');
+    $overview = str_trim($_POST['overview'] ?? '');
     $difficulty = str_trim($_POST['difficulty'] ?? 'Medium');
 
     db_exec(
@@ -32,7 +32,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $tags = $_POST['tags'] ?? [];
     db_exec($mysqli, "DELETE FROM walktag WHERE walk_id=?", [$walk_id], 'i');
     foreach ($tags as $tag_id) {
-      db_exec($mysqli, "INSERT IGNORE INTO walktag(walk_id, tag_id) VALUES(?,?)", [(int)$walk_id, (int)$tag_id], 'ii');
+      db_exec($mysqli, "INSERT IGNORE INTO walktag(walk_id, tag_id) VALUES(?,?)", [(int) $walk_id, (int) $tag_id], 'ii');
     }
 
     flash('ok', 'Walkthrough dibuat.');
@@ -44,10 +44,10 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
-    $id         = positive_int($_POST['id'] ?? 0, 'ID');
-    $game_id    = positive_int($_POST['game_id'] ?? 0, 'Game');
-    $title      = required(str_trim($_POST['title'] ?? ''), 'Judul');
-    $overview   = str_trim($_POST['overview'] ?? '');
+    $id = positive_int($_POST['id'] ?? 0, 'ID');
+    $game_id = positive_int($_POST['game_id'] ?? 0, 'Game');
+    $title = required(str_trim($_POST['title'] ?? ''), 'Judul');
+    $overview = str_trim($_POST['overview'] ?? '');
     $difficulty = str_trim($_POST['difficulty'] ?? 'Medium');
 
     db_exec(
@@ -61,7 +61,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $tags = $_POST['tags'] ?? [];
     db_exec($mysqli, "DELETE FROM walktag WHERE walk_id=?", [$id], 'i');
     foreach ($tags as $tag_id) {
-      db_exec($mysqli, "INSERT IGNORE INTO walktag(walk_id, tag_id) VALUES(?,?)", [(int)$id, (int)$tag_id], 'ii');
+      db_exec($mysqli, "INSERT IGNORE INTO walktag(walk_id, tag_id) VALUES(?,?)", [(int) $id, (int) $tag_id], 'ii');
     }
 
     flash('ok', 'Walkthrough diperbarui.');
@@ -80,13 +80,15 @@ if ($action === 'delete') {
 }
 
 echo '<div class="card"><h1>Walkthroughs</h1>';
-if ($m = flash('ok'))  echo '<div class="alert">' . e($m) . '</div>';
-if ($m = flash('err')) echo '<div class="alert">' . e($m) . '</div>';
+if ($m = flash('ok'))
+  echo '<div class="alert">' . e($m) . '</div>';
+if ($m = flash('err'))
+  echo '<div class="alert">' . e($m) . '</div>';
 echo '</div>';
 
 if ($action === 'edit') {
   $id = (int) ($_GET['id'] ?? 0);
-  $w  = db_one($mysqli, "SELECT * FROM walkthroughs WHERE id=?", [$id], 'i');
+  $w = db_one($mysqli, "SELECT * FROM walkthroughs WHERE id=?", [$id], 'i');
   if (!$w) {
     echo '<div class="card">Data tidak ditemukan</div>';
     require __DIR__ . '/_footer.php';
@@ -94,7 +96,7 @@ if ($action === 'edit') {
   }
 
   // tag yang terpilih
-  $selected    = db_all($mysqli, "SELECT tag_id FROM walktag WHERE walk_id=?", [$id], 'i');
+  $selected = db_all($mysqli, "SELECT tag_id FROM walktag WHERE walk_id=?", [$id], 'i');
   $selectedIds = array_column($selected, 'tag_id');
 
   echo '<div class="card"><h2>Edit</h2><form method="post" class="grid">';
@@ -123,7 +125,7 @@ if ($action === 'edit') {
   foreach ($allTags as $t) {
     $chk = in_array($t['id'], $selectedIds) ? 'checked' : '';
     echo '<label style="display:inline-flex;gap:.4rem;align-items:center;margin:.2rem 1rem .2rem 0">';
-    echo '<input type="checkbox" name="tags[]" value="'.$t['id'].'" '.$chk.'> <span>'.e($t['name']).'</span>';
+    echo '<input type="checkbox" name="tags[]" value="' . $t['id'] . '" ' . $chk . '> <span>' . e($t['name']) . '</span>';
     echo '</label>';
   }
   echo '</fieldset>';
@@ -149,7 +151,7 @@ if ($action === 'edit') {
   echo '<fieldset><legend class="small">Tags</legend>';
   foreach ($allTags as $t) {
     echo '<label style="display:inline-flex;gap:.4rem;align-items:center;margin:.2rem 1rem .2rem 0">';
-    echo '<input type="checkbox" name="tags[]" value="'.$t['id'].'"> <span>'.e($t['name']).'</span>';
+    echo '<input type="checkbox" name="tags[]" value="' . $t['id'] . '"> <span>' . e($t['name']) . '</span>';
     echo '</label>';
   }
   echo '</fieldset>';

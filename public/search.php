@@ -17,7 +17,8 @@ if ($q !== '') {
   // log pencarian (sederhana)
   db_exec($mysqli, "INSERT INTO searchlogs(keyword, searched_at) VALUES(?, NOW())", [$q]);
   $rows = db_all(
-    $mysqli, "
+    $mysqli,
+    "
     SELECT 'game' AS type, id, title, NULL AS extra FROM games WHERE title LIKE ? 
     UNION ALL
     SELECT 'walk' AS type, id, title, difficulty AS extra FROM walkthroughs WHERE title LIKE ?

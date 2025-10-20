@@ -284,37 +284,38 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
       echo '<div class="alert" style="margin-top:.8rem">' . e($m) . '</div>'; ?>
 
     <!-- Daftar komentar -->
-<div class="cmt-list">
-  <?php if (!$comments): ?>
-    <div class="cmt-empty small">Belum ada komentar.</div>
-  <?php else: foreach($comments as $c):
-    $mine = !empty($_SESSION['my_comments'][$c['id'] ?? 0]);
-  ?>
-    <article class="cmt" id="cmt-<?= (int)$c['id'] ?>">
-      <div class="avatar" data-initial="<?= e(mb_strtoupper(mb_substr($c['name'],0,1))) ?>"></div>
-      <div class="cmt-bubble">
-        <div class="cmt-headline" style="justify-content:space-between;">
-          <div>
-            <strong><?= e($c['name']) ?></strong>
-            <span class="time"><?= e(date('d M Y, H:i', strtotime($c['created_at']))) ?></span>
-          </div>
-          <?php if ($mine): ?>
-            <div class="cmt-actions-row" style="display:flex; gap:.4rem;">
-              <a class="btn tiny ghost" href="index.php?edit=<?= (int)$c['id'] ?>#comments">Edit</a>
-              <form method="post" action="index.php#comments" onsubmit="return confirm('Hapus komentar ini?')">
-                <?php csrf_field(); ?>
-                <input type="hidden" name="action" value="comment_delete">
-                <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
-                <button class="btn tiny danger" type="submit">Hapus</button>
-              </form>
+    <div class="cmt-list">
+      <?php if (!$comments): ?>
+        <div class="cmt-empty small">Belum ada komentar.</div>
+      <?php else:
+        foreach ($comments as $c):
+          $mine = !empty($_SESSION['my_comments'][$c['id'] ?? 0]);
+          ?>
+          <article class="cmt" id="cmt-<?= (int) $c['id'] ?>">
+            <div class="avatar" data-initial="<?= e(mb_strtoupper(mb_substr($c['name'], 0, 1))) ?>"></div>
+            <div class="cmt-bubble">
+              <div class="cmt-headline" style="justify-content:space-between;">
+                <div>
+                  <strong><?= e($c['name']) ?></strong>
+                  <span class="time"><?= e(date('d M Y, H:i', strtotime($c['created_at']))) ?></span>
+                </div>
+                <?php if ($mine): ?>
+                  <div class="cmt-actions-row" style="display:flex; gap:.4rem;">
+                    <a class="btn tiny ghost" href="index.php?edit=<?= (int) $c['id'] ?>#comments">Edit</a>
+                    <form method="post" action="index.php#comments" onsubmit="return confirm('Hapus komentar ini?')">
+                      <?php csrf_field(); ?>
+                      <input type="hidden" name="action" value="comment_delete">
+                      <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                      <button class="btn tiny danger" type="submit">Hapus</button>
+                    </form>
+                  </div>
+                <?php endif; ?>
+              </div>
+              <p><?= nl2br(e($c['content'])) ?></p>
             </div>
-          <?php endif; ?>
-        </div>
-        <p><?= nl2br(e($c['content'])) ?></p>
-      </div>
-    </article>
-  <?php endforeach; endif; ?>
-</div>
+          </article>
+        <?php endforeach; endif; ?>
+    </div>
 
   </div>
 </section>
@@ -325,7 +326,8 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
     <span class="pretitle">Tentang</span>
     <h2>Arcadia — Guide hub rapi, cepat, dan enak dibaca.</h2>
     <p class="muted">
-      Struktur konten <strong>Game → Walkthrough → Chapter</strong> bikin navigasi jelas, nyaman di mata, dan mudah dicari.
+      Struktur konten <strong>Game → Walkthrough → Chapter</strong> bikin navigasi jelas, nyaman di mata, dan mudah
+      dicari.
     </p>
 
     <div class="about-cta">
@@ -387,11 +389,11 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
           <div class="l">Game</div>
         </div>
         <div class="stat">
-          <div class="n"><?= (int)db_one($mysqli,"SELECT COUNT(*) c FROM walkthroughs")['c'] ?></div>
+          <div class="n"><?= (int) db_one($mysqli, "SELECT COUNT(*) c FROM walkthroughs")['c'] ?></div>
           <div class="l">Walkthrough</div>
         </div>
         <div class="stat">
-          <div class="n"><?= (int)db_one($mysqli,"SELECT COUNT(*) c FROM comments")['c'] ?></div>
+          <div class="n"><?= (int) db_one($mysqli, "SELECT COUNT(*) c FROM comments")['c'] ?></div>
           <div class="l">Komentar</div>
         </div>
       </div>
@@ -506,29 +508,29 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
 </script>
 
 <script>
-(function(){
-  const ta = document.getElementById('cmt-content');
-  const name = document.getElementById('cmt-name');
-  const cnt = document.getElementById('cmt-count');
-  const max = 1000;
+  (function () {
+    const ta = document.getElementById('cmt-content');
+    const name = document.getElementById('cmt-name');
+    const cnt = document.getElementById('cmt-count');
+    const max = 1000;
 
-  function updateCount(){
-    if(!ta || !cnt) return;
-    cnt.textContent = (ta.value || '').length + '/' + max;
-  }
-  function autosize(el){
-    if(!el) return;
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 400) + 'px';
-  }
+    function updateCount() {
+      if (!ta || !cnt) return;
+      cnt.textContent = (ta.value || '').length + '/' + max;
+    }
+    function autosize(el) {
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 400) + 'px';
+    }
 
-  if(ta){
-    ['input','change'].forEach(ev => ta.addEventListener(ev, ()=>{updateCount(); autosize(ta);} ));
-    setTimeout(()=>{updateCount(); autosize(ta);}, 0);
-  }
-  if(name) {
-    name.addEventListener('input', ()=> name.parentElement.classList.toggle('filled', !!name.value.trim()));
-    name.parentElement.classList.toggle('filled', !!name.value.trim());
-  }
-})();
+    if (ta) {
+      ['input', 'change'].forEach(ev => ta.addEventListener(ev, () => { updateCount(); autosize(ta); }));
+      setTimeout(() => { updateCount(); autosize(ta); }, 0);
+    }
+    if (name) {
+      name.addEventListener('input', () => name.parentElement.classList.toggle('filled', !!name.value.trim()));
+      name.parentElement.classList.toggle('filled', !!name.value.trim());
+    }
+  })();
 </script>

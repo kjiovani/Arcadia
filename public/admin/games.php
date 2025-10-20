@@ -15,25 +15,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
  * Mengembalikan URL publik (string) jika sukses, null jika tidak ada file.
  * Lempar Exception jika gagal validasi/menyimpan.
  */
-function handle_cover_upload(string $title): ?string {
+function handle_cover_upload(string $title): ?string
+{
   if (empty($_FILES['cover']) || $_FILES['cover']['error'] === UPLOAD_ERR_NO_FILE) {
     return null; // tidak ada file
   }
   if ($_FILES['cover']['error'] !== UPLOAD_ERR_OK) {
-    $code = (int)$_FILES['cover']['error'];
+    $code = (int) $_FILES['cover']['error'];
     throw new Exception("Upload cover gagal (code $code).");
   }
 
-  $tmp  = $_FILES['cover']['tmp_name'];
-  $size = (int)$_FILES['cover']['size'];
-  if ($size > 2*1024*1024) { // 2MB
+  $tmp = $_FILES['cover']['tmp_name'];
+  $size = (int) $_FILES['cover']['size'];
+  if ($size > 2 * 1024 * 1024) { // 2MB
     throw new Exception('Cover terlalu besar (>2MB).');
   }
 
   $fi = finfo_open(FILEINFO_MIME_TYPE);
   $mime = finfo_file($fi, $tmp);
   finfo_close($fi);
-  $map = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'];
+  $map = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
   if (!isset($map[$mime])) {
     throw new Exception('Format cover harus jpg/png/webp.');
   }
@@ -48,7 +49,7 @@ function handle_cover_upload(string $title): ?string {
   $slug = preg_replace('~[^a-z0-9]+~i', '-', $title ?: 'cover');
   $fname = strtolower(trim($slug, '-')) . '-' . time() . '.' . $map[$mime];
 
-  $destFs  = $uploadRoot . '/' . $fname;                 // path di disk
+  $destFs = $uploadRoot . '/' . $fname;                 // path di disk
   $destUrl = '/arcadia/uploads/covers/' . $fname;        // URL publik
 
   if (!move_uploaded_file($tmp, $destFs)) {
@@ -60,12 +61,12 @@ function handle_cover_upload(string $title): ?string {
 /* ========================= CREATE ========================= */
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
-    $title        = required(str_trim($_POST['title'] ?? ''), 'Judul');
-    $genre        = str_trim($_POST['genre'] ?? '');
-    $platform     = str_trim($_POST['platform'] ?? '');
+    $title = required(str_trim($_POST['title'] ?? ''), 'Judul');
+    $genre = str_trim($_POST['genre'] ?? '');
+    $platform = str_trim($_POST['platform'] ?? '');
     $release_year = (int) ($_POST['release_year'] ?? 0);
-    $image_url    = str_trim($_POST['image_url'] ?? ''); // opsional (manual)
-    $description  = str_trim($_POST['description'] ?? '');
+    $image_url = str_trim($_POST['image_url'] ?? ''); // opsional (manual)
+    $description = str_trim($_POST['description'] ?? '');
 
     db_exec(
       $mysqli,
@@ -95,13 +96,13 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 /* ========================= UPDATE ========================= */
 if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
-    $id           = positive_int($_POST['id'] ?? 0, 'ID');
-    $title        = required(str_trim($_POST['title'] ?? ''), 'Judul');
-    $genre        = str_trim($_POST['genre'] ?? '');
-    $platform     = str_trim($_POST['platform'] ?? '');
+    $id = positive_int($_POST['id'] ?? 0, 'ID');
+    $title = required(str_trim($_POST['title'] ?? ''), 'Judul');
+    $genre = str_trim($_POST['genre'] ?? '');
+    $platform = str_trim($_POST['platform'] ?? '');
     $release_year = (int) ($_POST['release_year'] ?? 0);
-    $image_url    = str_trim($_POST['image_url'] ?? ''); // opsional (manual)
-    $description  = str_trim($_POST['description'] ?? '');
+    $image_url = str_trim($_POST['image_url'] ?? ''); // opsional (manual)
+    $description = str_trim($_POST['description'] ?? '');
 
     db_exec(
       $mysqli,
@@ -136,8 +137,10 @@ if ($action === 'delete') {
 
 /* ========================= UI ========================= */
 echo '<div class="card"><h1>Games</h1>';
-if ($m = flash('ok'))  echo '<div class="alert">'.e($m).'</div>';
-if ($m = flash('err')) echo '<div class="alert">'.e($m).'</div>';
+if ($m = flash('ok'))
+  echo '<div class="alert">' . e($m) . '</div>';
+if ($m = flash('err'))
+  echo '<div class="alert">' . e($m) . '</div>';
 echo '</div>';
 
 if ($action === 'edit') {
@@ -152,16 +155,16 @@ if ($action === 'edit') {
   echo '<div class="card"><h2>Edit</h2>
         <form method="post" class="grid" enctype="multipart/form-data">';
   csrf_field();
-  echo '<input type="hidden" name="id" value="'.$g['id'].'"/>';
-  echo '<label>Judul<input class="input" name="title" value="'.e($g['title']).'"></label>';
-  echo '<label>Genre<input class="input" name="genre" value="'.e($g['genre']).'"></label>';
-  echo '<label>Platform<input class="input" name="platform" value="'.e($g['platform']).'"></label>';
-  echo '<label>Tahun Rilis<input class="input" type="number" name="release_year" value="'.e($g['release_year']).'"></label>';
-  echo '<label>Gambar URL (opsional, isi manual jika perlu)<input class="input" name="image_url" value="'.e($g['image_url']).'"></label>';
-  echo '<label>Deskripsi<textarea name="description" rows="5">'.e($g['description']).'</textarea></label>';
+  echo '<input type="hidden" name="id" value="' . $g['id'] . '"/>';
+  echo '<label>Judul<input class="input" name="title" value="' . e($g['title']) . '"></label>';
+  echo '<label>Genre<input class="input" name="genre" value="' . e($g['genre']) . '"></label>';
+  echo '<label>Platform<input class="input" name="platform" value="' . e($g['platform']) . '"></label>';
+  echo '<label>Tahun Rilis<input class="input" type="number" name="release_year" value="' . e($g['release_year']) . '"></label>';
+  echo '<label>Gambar URL (opsional, isi manual jika perlu)<input class="input" name="image_url" value="' . e($g['image_url']) . '"></label>';
+  echo '<label>Deskripsi<textarea name="description" rows="5">' . e($g['description']) . '</textarea></label>';
 
   if (!empty($g['image_url'])) {
-    echo '<div class="small">Cover saat ini: <a href="'.e($g['image_url']).'" target="_blank">lihat</a></div>';
+    echo '<div class="small">Cover saat ini: <a href="' . e($g['image_url']) . '" target="_blank">lihat</a></div>';
   }
   echo '<label>Ganti Cover (jpg/png/webp, ≤ 2MB)
           <input class="input" type="file" name="cover" accept=".jpg,.jpeg,.png,.webp">
@@ -194,12 +197,12 @@ echo '<div class="card"><h2>Data</h2>
       <table class="table"><tr><th>ID</th><th>Judul</th><th>Genre</th><th>Platform</th><th></th></tr>';
 foreach ($rows as $r) {
   echo '<tr>
-          <td>'.$r['id'].'</td>
-          <td>'.e($r['title']).'</td>
-          <td>'.e($r['genre']).'</td>
-          <td>'.e($r['platform']).'</td>
-          <td><a href="games.php?action=edit&id='.$r['id'].'">Edit</a> ·
-              <a href="games.php?action=delete&id='.$r['id'].'" onclick="return confirm(\'Hapus data?\')">Hapus</a></td>
+          <td>' . $r['id'] . '</td>
+          <td>' . e($r['title']) . '</td>
+          <td>' . e($r['genre']) . '</td>
+          <td>' . e($r['platform']) . '</td>
+          <td><a href="games.php?action=edit&id=' . $r['id'] . '">Edit</a> ·
+              <a href="games.php?action=delete&id=' . $r['id'] . '" onclick="return confirm(\'Hapus data?\')">Hapus</a></td>
         </tr>';
 }
 echo '</table></div>';

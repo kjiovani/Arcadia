@@ -1,7 +1,7 @@
 </div>
 
 <?php
-require_once __DIR__.'/../lib/db.php'; // pastikan sudah ada $mysqli
+require_once __DIR__ . '/../lib/db.php'; // pastikan sudah ada $mysqli
 
 // === Sorotan angka ===
 $gCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM games")['c'] ?? 0);
@@ -29,33 +29,33 @@ try {
 
     <!-- Brand & tagline -->
     <section class="f-col brand center">
-  <div class="brand-stack">
-    <div class="brand-line">
-      <span class="brand-mark">⌘</span>
-      <h3 class="brand-name">Arcadia</h3>
-    </div>
+      <div class="brand-stack">
+        <div class="brand-line">
+          <span class="brand-mark">⌘</span>
+          <h3 class="brand-name">Arcadia</h3>
+        </div>
 
-    <p class="tagline">
-      Hub panduan game yang ringkas, konsisten, dan nyaman dibaca—tanpa kebanjiran spoiler.
-    </p>
+        <p class="tagline">
+          Hub panduan game yang ringkas, konsisten, dan nyaman dibaca—tanpa kebanjiran spoiler.
+        </p>
 
-    <div class="chips compact">
+        <div class="chips compact">
+          <span class="chip"><strong><?= number_format($gCount) ?></strong> Game</span>
+          <span class="chip"><strong><?= number_format($wCount) ?></strong> Walkthrough</span>
+          <span class="chip"><strong><?= number_format($cCount) ?></strong> Komentar</span>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Sorotan angka -->
+    <div class="chips">
       <span class="chip"><strong><?= number_format($gCount) ?></strong> Game</span>
       <span class="chip"><strong><?= number_format($wCount) ?></strong> Walkthrough</span>
       <span class="chip"><strong><?= number_format($cCount) ?></strong> Komentar</span>
     </div>
-  </div>
-</section>
 
-
-      <!-- Sorotan angka -->
-      <div class="chips">
-        <span class="chip"><strong><?= number_format($gCount) ?></strong> Game</span>
-        <span class="chip"><strong><?= number_format($wCount) ?></strong> Walkthrough</span>
-        <span class="chip"><strong><?= number_format($cCount) ?></strong> Komentar</span>
-      </div>
-
-      <?php if ($popularTags): ?>
+    <?php if ($popularTags): ?>
       <div class="tags-wrap">
         <div class="tags-title">Tag populer</div>
         <div class="tags">
@@ -64,7 +64,7 @@ try {
           <?php endforeach; ?>
         </div>
       </div>
-      <?php endif; ?>
+    <?php endif; ?>
     </section>
 
     <!-- Navigasi -->
@@ -100,18 +100,21 @@ try {
 
   <!-- Tombol back to top -->
   <button class="to-top" aria-label="Kembali ke atas" title="Ke atas">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 5.5 3.5 14l1.4 1.4L12 8.3l7.1 7.1 1.4-1.4Z"/></svg>
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+      <path d="M12 5.5 3.5 14l1.4 1.4L12 8.3l7.1 7.1 1.4-1.4Z" />
+    </svg>
   </button>
 
   <script>
-    (function(){
+    (function () {
       const btn = document.querySelector('.site-footer.enhanced .to-top');
       const onScroll = () => btn.classList.toggle('show', window.scrollY > 600);
-      window.addEventListener('scroll', onScroll, {passive:true});
+      window.addEventListener('scroll', onScroll, { passive: true });
       onScroll();
-      btn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+      btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     })();
   </script>
 </footer>
 </body>
+
 </html>
