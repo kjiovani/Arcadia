@@ -321,7 +321,7 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
 </section>
 
 <!-- (6) Tentang — versi v2 -->
-<section id="about" class="section card about-v2">
+<section id="about" class="section card about--loose">
   <header class="about-head">
     <span class="pretitle">Tentang</span>
     <h2>Arcadia — Guide hub rapi, cepat, dan enak dibaca.</h2>
@@ -345,28 +345,28 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
     <div class="about-col">
       <ul class="feature-grid">
         <li>
-          <div class="fi">🧭</div>
+          <div class="fi">N</div>
           <div>
             <h3>Navigasi terstruktur</h3>
             <p>Hierarki konsisten dari game sampai chapter, anti nyasar.</p>
           </div>
         </li>
         <li>
-          <div class="fi">🧩</div>
+          <div class="fi">C</div>
           <div>
             <h3>Chapter ringkas</h3>
             <p>Langkah fokus, minim spoiler, mudah di-scan.</p>
           </div>
         </li>
         <li>
-          <div class="fi">🔎</div>
+          <div class="fi">S</div>
           <div>
             <h3>Pencarian cepat</h3>
             <p>Cari boss, shrine, atau tips dalam hitungan detik.</p>
           </div>
         </li>
         <li>
-          <div class="fi">🛡️</div>
+          <div class="fi">P</div>
           <div>
             <h3>Keamanan bawaan</h3>
             <p>Prepared statements + CSRF token pada form.</p>
@@ -402,9 +402,9 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
         <div class="stack-title">Teknologi</div>
         <div class="stack-chips">
           <span class="chip">PHP</span>
-          <span class="chip">MySQL/MariaDB</span>
-          <span class="chip">CSRF Guard</span>
-          <span class="chip">Vanilla CSS</span>
+          <span class="chip">HTML</span>
+          <span class="chip">CSS</span>
+          <span class="chip">JavaScript</span>
         </div>
       </div>
     </div>

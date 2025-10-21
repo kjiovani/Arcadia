@@ -51,7 +51,7 @@ $cCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM comments")['c'] ?? 0);
         <h4>Tentang proyek</h4>
         <ul class="bullets">
           <li>Struktur konten rapi: <em>game → walkthrough → chapter</em>.</li>
-          <li>Keamanan: prepared statements &amp; CSRF token.</li>
+          <li>Prinsip UI: gelap, kontras tinggi, komponen ringkas, fokus scanability.</li>
           <li>Teknologi: PHP, MySQL/MariaDB, Vanilla CSS.</li>
         </ul>
       </section>

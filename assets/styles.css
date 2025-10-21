@@ -2602,3 +2602,23 @@ html {
   border-radius: 12px;
   box-shadow: 0 12px 22px rgba(139, 92, 246, .28);
 }
+
+/* === Lihat Detail: hover jadi ungu (khusus di daftar game) === */
+.games-grid .game-actions .btn,
+.game-item .game-actions .btn {
+  /* gaya dasar: tombol outline/gelap */
+  background: transparent;
+  color: #e5e7eb;
+  border: 1px solid rgba(139, 92, 246, .45);
+  box-shadow: none;
+  transition: background .22s ease, color .15s ease, border-color .22s ease, transform .15s ease;
+}
+
+.games-grid .game-actions .btn:hover,
+.game-item .game-actions .btn:hover {
+  background: linear-gradient(120deg, #8b5cf6 0%, #a78bfa 50%, #8b5cf6 100%);
+  color: #0b0b10;          /* teks jadi gelap biar kontras */
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(139, 92, 246, .28);
+}
