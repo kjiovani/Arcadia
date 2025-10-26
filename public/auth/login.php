@@ -17,7 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     db_exec($mysqli, "UPDATE users SET last_login_at=NOW() WHERE id=?", [$row['id']], 'i');
-    $_SESSION['user'] = ['id' => $row['id'], 'name' => $row['name'], 'email' => $row['email']];
+    // sesudah password_verify ok:
+    $_SESSION['user'] = [
+      'id' => $row['id'],
+      'name' => $row['name'],
+      'email' => $row['email'],
+      'role' => $row['role'],   // ⬅️ penting
+    ];
+
 
     $next = $_POST['next'] ?? '';
     header('Location: ' . ($next ?: '/arcadia/public/index.php'));

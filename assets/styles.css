@@ -2623,3 +2623,74 @@ html {
   transform: translateY(-1px);
   box-shadow: 0 12px 22px rgba(139, 92, 246, .28);
 }
+
+/* efek underline halus untuk item nav */
+.nav a.fx-underline {
+  position: relative;
+  display: inline-block;
+  padding: .35rem .6rem;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: color .18s ease;
+}
+
+.nav a.fx-underline::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -6px;
+  /* sesuaikan jarak underline */
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .85), rgba(180, 160, 255, .85));
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform .22s ease;
+  pointer-events: none;
+}
+
+/* muncul saat hover/focus, atau saat aktif */
+.nav a.fx-underline:hover::after,
+.nav a.fx-underline:focus-visible::after,
+.nav a.fx-underline.active::after {
+  transform: scaleX(1);
+}
+
+/* opsional: warna teks sedikit lebih terang saat hover */
+.nav a.fx-underline:hover,
+.nav a.fx-underline:focus-visible {
+  color: #fff;
+}
+
+.nav a.fx-underline {
+  position: relative;
+  display: inline-block;
+  padding: .35rem .6rem;
+  text-decoration: none;
+  transition: color .18s ease;
+}
+
+.nav a.fx-underline::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -6px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .9), rgba(180, 160, 255, .9));
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform .22s ease;
+}
+
+.nav a.fx-underline:hover::after,
+.nav a.fx-underline:focus-visible::after,
+.nav a.fx-underline.active::after {
+  transform: scaleX(1);
+}
+
+.nav a.fx-underline.active {
+  color: #fff;
+}
