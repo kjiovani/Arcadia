@@ -5,6 +5,7 @@ require_once __DIR__ . '/../lib/helpers.php';
 require_once __DIR__ . '/../lib/csrf.php';
 require_once __DIR__ . '/../lib/validation.php';
 require_once __DIR__ . '/../lib/auth_user.php';
+require_once __DIR__ . '/../lib/auth.php'; // agar bisa pakai is_logged_in()  
 include __DIR__ . '/_header.php';
 
 
@@ -93,7 +94,7 @@ if ($activeGenre !== '') {
 $sqlGames .= " ORDER BY title ASC";
 $games = db_all($mysqli, $sqlGames, $params, $types);
 
-$featured = db_all($mysqli,"
+$featured = db_all($mysqli, "
   SELECT w.id, w.title, w.difficulty, LEFT(w.overview,150) AS excerpt,
          g.title AS game, g.id AS game_id, g.image_url AS game_image
   FROM walkthroughs w
@@ -146,15 +147,14 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
         </div>
 
         <?php
-// build URL: jika belum login → arahkan ke login dengan ?next=
-$detailUrl = "game.php?id={$g['id']}";
-if (!is_user_logged_in()) {
-  $detailUrl = "/arcadia/public/auth/login.php?next=" . urlencode($detailUrl);
+$detailUrl = 'game.php?id=' . $g['id'];
+if (!is_logged_in()) {
+  $detailUrl = '/arcadia/public/admin/login.php?next=' . urlencode($detailUrl);
 }
 ?>
-<div class="game-actions">
-  <a class="btn ghost" href="<?= e($detailUrl) ?>">Lihat Detail</a>
-</div>
+        <div class="game-actions">
+          <a class="btn ghost" href="<?= e($detailUrl) ?>">Lihat Detail</a>
+        </div>
 
       </div>
     <?php endforeach; ?>
@@ -195,7 +195,7 @@ if (!is_user_logged_in()) {
     <p class="small">Belum ada data.</p>
   <?php else: ?>
     <div id="feat4" class="feat4-wrap">
-      
+
       <div class="feat4-viewport">
         <div class="feat4-track">
           <?php foreach ($feat4 as $f):
@@ -223,15 +223,14 @@ if (!is_user_logged_in()) {
                   <?= e(mb_strimwidth($f['excerpt'] ?? '', 0, 160, '…', 'UTF-8')) ?>
                 </p>
                 <?php
-// build URL: jika belum login → arahkan ke login dengan ?next=
-$openUrl = "walkthrough.php?id={$f['id']}";
-if (!is_user_logged_in()) {
-  $openUrl = "/arcadia/public/auth/login.php?next=" . urlencode($openUrl);
+$openUrl = 'walkthrough.php?id=' . $f['id'];
+if (!is_logged_in()) {
+  $openUrl = '/arcadia/public/admin/login.php?next=' . urlencode($openUrl);
 }
 ?>
-<div class="feat4-actions">
-  <a class="btn" href="<?= e($openUrl) ?>">Buka Panduan</a>
-</div>
+                <div class="feat4-actions">
+                  <a class="btn" href="<?= e($openUrl) ?>">Buka Panduan</a>
+                </div>
 
               </div>
             </article>
@@ -239,7 +238,7 @@ if (!is_user_logged_in()) {
         </div>
       </div>
 
-      
+
     </div>
   <?php endif; ?>
 </section>
