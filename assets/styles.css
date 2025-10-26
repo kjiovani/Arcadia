@@ -2694,3 +2694,132 @@ html {
 .nav a.fx-underline.active {
   color: #fff;
 }
+
+/* ===== Tombol Lainnya: sama seperti Logout + animasi halus ===== */
+.btn-pill,
+.btn-more-logout{
+  /* palet sama dengan Logout */
+  --violet-300:#C4B5FD;   /* paling muda */
+  --violet-400:#A78BFA;   /* atas */
+  --violet-500:#8B5CF6;   /* bawah */
+  --ease1:cubic-bezier(.22,.61,.36,1);
+  --ease2:cubic-bezier(.16,.84,.44,1);
+
+  position:relative;
+  z-index:0;                               /* penting: stacking context */
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:44px; padding:.62rem 1.15rem;
+  border:0; border-radius:9999px;
+  color:#0f1222;                           /* teks gelap seperti Logout */
+  font-weight:800; letter-spacing:.2px;
+
+  /* gradasi siap disapu */
+  background: linear-gradient(180deg, var(--violet-400) 0%, var(--violet-500) 100%);
+  background-size: 220% 220%;
+  background-position: 0% 50%;
+
+  box-shadow:
+    0 10px 24px rgba(139,92,246,.30),
+    inset 0 0 0 1px rgba(255,255,255,.18);
+
+  transition:
+    transform .36s var(--ease2),
+    box-shadow .36s var(--ease2),
+    background-position 1.1s var(--ease1),
+    filter .36s var(--ease2);
+  will-change: transform, box-shadow, background-position;
+  overflow:hidden;                         /* untuk sheen */
+}
+
+/* ukuran/posisi */
+.more-wrap{ display:flex; justify-content:center; margin-top:1rem }
+.btn-more-logout{ min-width:170px; text-align:center }
+
+/* Glow ambient (dipakai juga untuk pulse) */
+.btn-more-logout::before{
+  content:"";
+  position:absolute; inset:-14px; border-radius:inherit; z-index:-1;
+  background: radial-gradient(60% 60% at 50% 50%, rgba(139,92,246,.30), transparent 72%);
+  filter: blur(18px);
+  opacity: 0;
+  transition: opacity .6s var(--ease1);
+}
+
+/* Sheen / kilau melintas */
+.btn-more-logout::after{
+  content:"";
+  position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,.26) 12%, transparent 24%);
+  transform: translateX(-130%) skewX(-12deg);
+  opacity: 0;
+}
+
+/* Hover: naik tipis + sweep gradasi + glow + sheen */
+.btn-pill:hover,
+.btn-more-logout:hover{
+  transform: translateY(-1px) scale(1.012);
+  background-position: 100% 50%;          /* sweep terlihat */
+  box-shadow:
+    0 16px 40px rgba(139,92,246,.34),
+    inset 0 0 0 1px rgba(255,255,255,.16);
+  filter: saturate(1.03) brightness(1.02);
+}
+
+.btn-more-logout:hover::before{
+  opacity: 1;
+  animation: haloPulse 1.6s var(--ease1) .05s infinite alternate both;
+}
+
+.btn-more-logout:hover::after{
+  opacity: 1;
+  animation: sheenSlide 1s var(--ease2) .05s forwards;
+}
+
+/* Active & fokus */
+.btn-pill:active,
+.btn-more-logout:active{
+  transition-duration:.2s;
+  transform: translateY(0) scale(.985);
+  box-shadow: 0 8px 18px rgba(139,92,246,.22),
+              inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.btn-pill:focus-visible,
+.btn-more-logout:focus-visible{
+  outline:2px solid rgba(180,160,255,.6);
+  outline-offset:2px;
+}
+
+/* Keyframes */
+@keyframes haloPulse{
+  0%   { filter: blur(14px); opacity:.70; transform: scale(1.00); }
+  100% { filter: blur(20px); opacity:1.00; transform: scale(1.04); }
+}
+@keyframes sheenSlide{
+  0%   { transform: translateX(-130%) skewX(-12deg); opacity:0; }
+  10%  { opacity:.9; }
+  100% { transform: translateX(130%) skewX(-12deg); opacity:0; }
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce){
+  .btn-pill,.btn-more-logout{ transition:none !important; background-position:50% 50% !important; }
+  .btn-pill:hover,.btn-more-logout:hover,
+  .btn-pill:active,.btn-more-logout:active{ transform:none !important; box-shadow:none !important; }
+  .btn-more-logout::before,.btn-more-logout::after{ display:none !important; }
+}
+
+/* Komentar UI ringkas */
+.cmt-form .input{ width:100%; border-radius:12px; padding:.8rem; }
+.cmt-actions-row{ display:flex; gap:.5rem; align-items:center; justify-content:flex-end; margin-top:.5rem; }
+.cmt-list{ margin-top:1rem; display:grid; gap:.75rem; }
+.cmt-item{ display:flex; gap:.8rem; padding:.75rem; border-radius:12px; background: rgba(255,255,255,.02); border:1px solid rgba(214,197,255,.12); }
+.cmt-item .avatar{
+  width:38px;height:38px;border-radius:10px;background:rgba(139,92,246,.22);
+  display:grid; place-items:center; font-weight:800; color:#eae7ff;
+}
+.cmt-body{ flex:1; }
+.cmt-headline{ display:flex; gap:.6rem; align-items:center; }
+.cmt-headline .time{ font-size:.85rem; opacity:.7; }
+.cmt-ops{ margin-left:auto; display:flex; gap:.4rem; }
+.small.muted{ opacity:.75; }
+

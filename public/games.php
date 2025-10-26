@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/db.php';
 require_once __DIR__ . '/../lib/helpers.php';
 require_once __DIR__ . '/../lib/auth_user.php'; // buat cek login saat klik detail
+require_user_login($_SERVER['REQUEST_URI']);
 include __DIR__ . '/_header.php';
 
 /* === Query filter & pencarian === */
@@ -232,59 +233,190 @@ $genres = db_all($mysqli, "SELECT DISTINCT genre    FROM games WHERE genre<>''  
     inset: 0;
   }
 
-  /* ====== ANIMASI TOMBOL (TERAPKAN + LIHAT DETAIL) ====== */
-  .btn-fx {
-    position: relative;
-    overflow: hidden;
-    transition:
-      transform .26s cubic-bezier(.22, .61, .36, 1),
-      box-shadow .26s cubic-bezier(.22, .61, .36, 1),
-      background-color .26s cubic-bezier(.22, .61, .36, 1),
-      border-color .26s cubic-bezier(.22, .61, .36, 1);
-    will-change: transform;
-  }
+ /* ====== ANIMASI TOMBOL — versi smooth ====== */
+.btn-fx{
+  position: relative;
+  overflow: hidden;
+  will-change: transform, box-shadow, background-color, border-color;
+  /* durasi & kurva lebih halus */
+  transition:
+    transform .34s cubic-bezier(.16,.84,.44,1),
+    box-shadow .34s cubic-bezier(.16,.84,.44,1),
+    background-color .34s cubic-bezier(.16,.84,.44,1),
+    border-color .34s cubic-bezier(.16,.84,.44,1),
+    color .34s cubic-bezier(.16,.84,.44,1);
+  transform: translateZ(0); /* cegah jitter pada GPU */
+}
 
-  .btn-fx:hover {
-    transform: translateY(-1px) scale(1.02);
-    box-shadow: 0 12px 30px rgba(139, 92, 246, .28);
-  }
+/* hover: sedikit naik + glow lembut */
+.btn-fx:hover{
+  transform: translateY(-1px) scale(1.012);
+  box-shadow: 0 10px 26px rgba(139,92,246,.22);
+}
 
-  .btn-fx:active {
-    transform: translateY(0) scale(.985);
-  }
+/* active: turun halus, cepat */
+.btn-fx:active{
+  transition-duration: .18s; /* responsif saat ditekan */
+  transform: translateY(0) scale(.992);
+  box-shadow: 0 6px 16px rgba(139,92,246,.16);
+}
 
-  /* ripple halus yang mengikuti kursor */
-  .btn-fx::after {
-    content: "";
-    position: absolute;
-    inset: -40%;
-    border-radius: inherit;
-    background: radial-gradient(140px 140px at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, .16), transparent 60%);
-    opacity: 0;
-    transition: opacity .36s cubic-bezier(.22, .61, .36, 1);
-    pointer-events: none;
-  }
+/* ripple halus (lebih lembut dari sebelumnya) */
+.btn-fx::after{
+  content:"";
+  position:absolute; inset:-50%;
+  border-radius:inherit; pointer-events:none;
+  background:
+    radial-gradient(160px 160px at var(--x,50%) var(--y,50%),
+    rgba(255,255,255,.14), transparent 60%);
+  opacity:0;
+  transition: opacity .40s cubic-bezier(.16,.84,.44,1);
+}
+.btn-fx:hover::after{ opacity:.55; }
 
-  .btn-fx:hover::after {
-    opacity: .6;
-  }
+/* aksesibilitas */
+.btn-fx:focus-visible{
+  outline: 2px solid rgba(180,160,255,.55);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
 
-  /* aksesibilitas */
-  .btn-fx:focus-visible {
-    outline: 2px solid rgba(180, 160, 255, .65);
-    outline-offset: 2px;
-    border-radius: 12px;
-  }
+/* prefer-reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  .btn-fx{ transition:none !important }
+  .btn-fx:hover, .btn-fx:active{ transform:none !important; box-shadow:none !important; }
+  .btn-fx::after{ display:none !important; }
+}
 
-  @media (prefers-reduced-motion: reduce) {
+/* === Palet ungu seperti tombol Login pada screenshot === */
+:root{
+  --violet-500: #8B5CF6;  /* ungu utama */
+  --violet-400: #A78BFA;  /* ungu muda (seperti Login) */
+  --violet-300: #C4B5FD;  /* ungu paling muda untuk hover halus */
+  --ink-dark : #0e0f1a;   /* teks gelap untuk kontras */
+}
 
-    .card-game,
-    .btn-fx,
-    .thumb {
-      transition: none !important;
-      animation: none !important;
-    }
-  }
+/* ===================== */
+/* Tombol TERAPKAN       */
+/* ===================== */
+.btn-apply{
+  background: linear-gradient(180deg, var(--violet-400) 0%, var(--violet-500) 100%);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--ink-dark);
+  font-weight: 800;
+  border-radius: 14px;
+  transition:
+    transform .34s cubic-bezier(.16,.84,.44,1),
+    box-shadow .34s cubic-bezier(.16,.84,.44,1),
+    background-color .34s cubic-bezier(.16,.84,.44,1),
+    background-position .5s cubic-bezier(.22,.61,.36,1);
+}
+
+/* hover: warna jadi lebih mirip tombol Login (lebih muda) + glow halus */
+.btn-apply:hover{
+  background: linear-gradient(180deg, var(--violet-300) 0%, var(--violet-400) 100%);
+  box-shadow: 0 14px 32px rgba(139,92,246,.28);
+  transform: translateY(-1px) scale(1.012);
+}
+
+/* tekan */
+.btn-apply:active{
+  transform: translateY(0) scale(.985);
+  box-shadow: 0 8px 18px rgba(139,92,246,.20);
+}
+
+/* ===================== */
+/* Tombol LIHAT DETAIL   */
+/* ===================== */
+.btn-detail{
+  border: 1px solid rgba(214,197,255,.22);
+  background: rgba(255,255,255,.02);
+  color: #e9e6ff;
+  transition:
+    transform .28s cubic-bezier(.16,.84,.44,1),
+    box-shadow .28s cubic-bezier(.16,.84,.44,1),
+    background-color .28s cubic-bezier(.16,.84,.44,1),
+    border-color .28s cubic-bezier(.16,.84,.44,1),
+    color .28s cubic-bezier(.16,.84,.44,1);
+}
+
+/* hover: ubah ke ungu muda seperti tombol Login */
+.btn.btn-detail:hover{
+  background: var(--violet-400);      /* warna seperti Login */
+  border-color: var(--violet-400);
+  color: var(--ink-dark);             /* biar kontras dan mudah dibaca */
+  box-shadow: 0 12px 30px rgba(139,92,246,.32);
+  transform: translateY(-1px) scale(1.012);
+}
+
+/* ikon panah muncul halus saat hover */
+.btn-detail .btn-ic{
+  display:inline-block;
+  transform: translateX(-4px);
+  opacity: 0;
+  transition: transform .28s cubic-bezier(.16,.84,.44,1), opacity .28s cubic-bezier(.16,.84,.44,1);
+}
+.btn-detail:hover .btn-ic{
+  transform: translateX(2px);
+  opacity: 1;
+}
+
+/* tekan */
+.btn-detail:active{
+  transform: translateY(0) scale(.985);
+  box-shadow: 0 6px 16px rgba(139,92,246,.22);
+}
+
+/* semua elemen interaktif di footer kartu harus di atas overlay */
+.card-game .card-body,
+.card-game .actions,
+.card-game .actions .btn,
+.card-game .btn-detail,
+.card-game .chip{
+  position: relative;
+  z-index: 2;
+}
+
+/* Buat semua <select> tampil cocok tema gelap */
+select, .input[type="select"], select.input {
+  background-color: #1a1825;
+  color: #ece9ff;
+  border: 1px solid rgba(214,197,255,.28);
+  color-scheme: dark;                 /* hint ke browser untuk dropdown dark */
+}
+
+/* Warna daftar opsi saat dropdown dibuka (didukung Chrome/Edge/Firefox) */
+select option {
+  background-color: #1a1825;          /* latar opsi */
+  color: #ece9ff;                      /* teks opsi */
+}
+
+/* Opsi terpilih / hover di daftar */
+select option:checked,
+select option:hover {
+  background-color: #8b5cf6 !important;   /* ungu Arcadia */
+  color: #0e0f1a !important;              /* teks gelap biar kontras */
+}
+
+/* Opsi nonaktif (mis. placeholder Semuanya) */
+select option[disabled],
+select option:disabled {
+  color: #8c84ab;
+}
+
+/* Focus ring pada control select */
+select:focus {
+  outline: 2px solid rgba(180,160,255,.6);
+  outline-offset: 2px;
+  border-color: rgba(180,160,255,.6);
+}
+
+/* (opsional) sudut & padding biar seragam */
+select, select.input {
+  border-radius: 12px;
+  padding: .6rem .9rem;
+}
+
 </style>
 
 
@@ -310,7 +442,7 @@ $genres = db_all($mysqli, "SELECT DISTINCT genre    FROM games WHERE genre<>''  
         <option value="<?= e($g['genre']) ?>" <?= $genre === $g['genre'] ? 'selected' : '' ?>><?= e($g['genre']) ?></option>
       <?php endforeach; ?>
     </select>
-    <button class="btn btn-fx">Terapkan</button>
+    <button class="btn btn-apply">Terapkan</button>
 
   </form>
 
@@ -338,7 +470,7 @@ $genres = db_all($mysqli, "SELECT DISTINCT genre    FROM games WHERE genre<>''  
             <div class="desc"><?= e($gm['excerpt']) ?>…</div>
             <div class="actions">
               <span class="chip chip-soft">Guide tersedia</span>
-              <a class="btn ghost btn-fx" href="<?= e($detailUrl) ?>">Lihat Detail</a>
+              <a class="btn btn-detail ghost" href="<?= e($detailUrl) ?>">Lihat Detail</a>
 
             </div>
 
@@ -361,4 +493,14 @@ $genres = db_all($mysqli, "SELECT DISTINCT genre    FROM games WHERE genre<>''  
       btn.style.setProperty('--y', (e.clientY - r.top) + 'px');
     });
   }, { passive: true });
+</script>
+
+<script>
+  document.addEventListener('pointermove', e => {
+    document.querySelectorAll('.btn-apply').forEach(b => {
+      const r = b.getBoundingClientRect();
+      b.style.setProperty('--x', (e.clientX - r.left) + 'px');
+      b.style.setProperty('--y', (e.clientY - r.top) + 'px');
+    });
+  }, {passive:true});
 </script>

@@ -22,10 +22,10 @@
       <nav class="nav-menu">
         <a class="nav-link <?= strpos($path, '/public/index.php') !== false ? 'active' : '' ?>"
           href="/arcadia/public/index.php">Beranda</a>
-        <a class="nav-link <?= strpos($path, '/public/search.php') !== false ? 'active' : '' ?>"
-          href="/arcadia/public/search.php">Cari</a>
         <a class="nav-link <?= (strpos($path, '/public/games.php') !== false || strpos($path, '/public/walkthrough.php') !== false) ? 'active' : '' ?>"
           href="/arcadia/public/games.php">Game</a>
+        <a class="nav-link <?= strpos($path, '/public/search.php') !== false ? 'active' : '' ?>"
+          href="/arcadia/public/search.php">Cari</a>
         <a class="nav-link" href="/arcadia/public/index.php#about">Tentang</a>
         <a class="fx-underline" href="/arcadia/public/admin-info.php">Admin</a>
         <span class="nav-sep"></span>

@@ -170,6 +170,15 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
       </div>
     <?php endfor; ?>
   </div>
+
+  <div class="more-wrap">
+  <a class="btn btn-pill btn-more-logout" href="/arcadia/public/games.php">
+    <span>Lainnya</span>
+  </a>
+</div>
+
+
+
 </section>
 
 <!-- (3) Panduan Unggulan — Carousel -->
@@ -234,90 +243,6 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
       </div>
     </div>
   <?php endif; ?>
-</section>
-
-<!-- (4) Komentar -->
-<section id="comments" class="section">
-  <div class="cmt-card">
-    <div class="cmt-head">
-      <h2 style="margin:0">Komentar</h2>
-      <div class="cmt-sub small">Bagikan saran, koreksi, atau request panduan.</div>
-    </div>
-
-    <!-- Form komentar -->
-    <form class="cmt-form" method="post" action="index.php#comments">
-      <?php csrf_field(); ?>
-      <input type="hidden" name="action" value="<?= $editRow ? 'comment_update' : 'comment_create' ?>">
-      <?php if ($editRow): ?>
-        <input type="hidden" name="id" value="<?= (int) $editRow['id'] ?>">
-      <?php endif; ?>
-
-      <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off"> <!-- honeypot -->
-
-      <div class="fld <?= $editRow ? 'filled' : '' ?>">
-        <input class="input" id="cmt-name" name="name" placeholder="Namamu"
-          value="<?= $editRow ? e($editRow['name']) : '' ?>">
-        <label for="cmt-name">Nama</label>
-      </div>
-
-      <div class="fld <?= $editRow ? 'filled' : '' ?>">
-        <textarea class="input" id="cmt-content" name="content" rows="4"
-          placeholder="Tulis komentar..."><?= $editRow ? e($editRow['content']) : '' ?></textarea>
-        <label for="cmt-content">Komentar</label>
-      </div>
-
-      <div class="cmt-actions">
-        <?php if ($editRow): ?>
-          <a class="btn ghost" href="index.php#comments">Batal</a>
-        <?php endif; ?>
-        <span class="cmt-count" id="cmt-count">0/1000</span>
-        <button class="btn-send" type="submit" aria-label="<?= $editRow ? 'Simpan Perubahan' : 'Kirim komentar' ?>">
-          <svg viewBox="0 0 24 24">
-            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
-          </svg>
-          <?= $editRow ? 'Simpan' : 'Kirim' ?>
-        </button>
-      </div>
-    </form>
-
-    <?php if ($m = flash('ok'))
-      echo '<div class="alert" style="margin-top:.8rem">' . e($m) . '</div>'; ?>
-    <?php if ($m = flash('err'))
-      echo '<div class="alert" style="margin-top:.8rem">' . e($m) . '</div>'; ?>
-
-    <!-- Daftar komentar -->
-    <div class="cmt-list">
-      <?php if (!$comments): ?>
-        <div class="cmt-empty small">Belum ada komentar.</div>
-      <?php else:
-        foreach ($comments as $c):
-          $mine = !empty($_SESSION['my_comments'][$c['id'] ?? 0]); ?>
-          <article class="cmt" id="cmt-<?= (int) $c['id'] ?>">
-            <div class="avatar" data-initial="<?= e(mb_strtoupper(mb_substr($c['name'], 0, 1))) ?>"></div>
-            <div class="cmt-bubble">
-              <div class="cmt-headline" style="justify-content:space-between;">
-                <div>
-                  <strong><?= e($c['name']) ?></strong>
-                  <span class="time"><?= e(date('d M Y, H:i', strtotime($c['created_at']))) ?></span>
-                </div>
-                <?php if ($mine): ?>
-                  <div class="cmt-actions-row" style="display:flex; gap:.4rem;">
-                    <a class="btn tiny ghost" href="index.php?edit=<?= (int) $c['id'] ?>#comments">Edit</a>
-                    <form method="post" action="index.php#comments" onsubmit="return confirm('Hapus komentar ini?')">
-                      <?php csrf_field(); ?>
-                      <input type="hidden" name="action" value="comment_delete">
-                      <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
-                      <button class="btn tiny danger" type="submit">Hapus</button>
-                    </form>
-                  </div>
-                <?php endif; ?>
-              </div>
-              <p><?= nl2br(e($c['content'])) ?></p>
-            </div>
-          </article>
-        <?php endforeach; endif; ?>
-    </div>
-  </div>
 </section>
 
 <!-- (5) Tentang — versi v2 -->
@@ -406,5 +331,12 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
 <?php include __DIR__ . '/_footer.php'; ?>
 
 <script>
-  /* …(script carousel dan komentar milikmu tetap, tidak diubah)… */
+  // Ripple spotlight mengikuti kursor (halus)
+  document.addEventListener('pointermove', e => {
+    document.querySelectorAll('.btn-more-logout').forEach(b => {
+      const r = b.getBoundingClientRect();
+      b.style.setProperty('--x', (e.clientX - r.left) + 'px');
+      b.style.setProperty('--y', (e.clientY - r.top) + 'px');
+    });
+  }, {passive:true});
 </script>
