@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 21 Okt 2025 pada 03.04
+-- Waktu pembuatan: 26 Okt 2025 pada 12.08
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -158,16 +158,18 @@ CREATE TABLE `users` (
   `name` varchar(120) NOT NULL,
   `email` varchar(150) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
-  `role` enum('ADMIN','EDITOR','VIEWER') NOT NULL DEFAULT 'ADMIN',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `role` enum('OWNER','ADMIN','USER') NOT NULL DEFAULT 'USER',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `last_login_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data untuk tabel `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `role`, `created_at`) VALUES
-(1, 'Admin', 'admin@arcadia.test', '$2y$10$wR3lPU9gPuWyaujUqyup3Og/CAGiu1VE9/s6Oqoq8UjGhXjb96UfK', 'ADMIN', '2025-10-20 09:27:01');
+INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `role`, `created_at`, `last_login_at`) VALUES
+(1, 'Aragorn', 'owner@arcadia.com', '$2y$10$DLN.d2z9VQoPbYmtUzeOj.hNJFk.AggyJjzNVHXwUwahXXPb3PdSG', 'OWNER', '2025-10-20 09:27:01', '2025-10-26 17:38:54'),
+(4, 'Giovani', 'giovani@gmail.com', '$2y$10$BU.FrW7WU0I9akkG6br5OeO8QueKLloAcPQmsq2JMbxuKsQW/p026', 'USER', '2025-10-26 09:41:30', '2025-10-26 16:47:00');
 
 -- --------------------------------------------------------
 
@@ -314,7 +316,7 @@ ALTER TABLE `tags`
 -- AUTO_INCREMENT untuk tabel `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT untuk tabel `walktag`
