@@ -35,5 +35,4 @@ echo '<button class="btn">Masuk</button>';
 echo '</form>';
 echo '<p class="small">Belum ada admin? <a href="setup.php">Buat admin default</a>.</p>';
 echo '</div>';
-include __DIR__ . '/_footer.php';
 ?>

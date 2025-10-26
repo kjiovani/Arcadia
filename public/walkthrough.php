@@ -3,6 +3,9 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/db.php';
 require_once __DIR__ . '/../lib/helpers.php';
 include __DIR__ . '/_header.php';
+require_once __DIR__ . '/../lib/auth_user.php';
+require_once __DIR__ . '/../lib/auth.php';
+require_user_login($_SERVER['REQUEST_URI']); // paksa login user
 
 $id = (int) ($_GET['id'] ?? 0);
 $w = db_one($mysqli, "SELECT w.*, g.title AS game_title FROM walkthroughs w JOIN games g ON g.id=w.game_id WHERE w.id=?", [$id], "i");

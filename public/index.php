@@ -4,6 +4,7 @@ require_once __DIR__ . '/../lib/db.php';
 require_once __DIR__ . '/../lib/helpers.php';
 require_once __DIR__ . '/../lib/csrf.php';
 require_once __DIR__ . '/../lib/validation.php';
+require_once __DIR__ . '/../lib/auth_user.php';
 include __DIR__ . '/_header.php';
 
 
@@ -92,11 +93,13 @@ if ($activeGenre !== '') {
 $sqlGames .= " ORDER BY title ASC";
 $games = db_all($mysqli, $sqlGames, $params, $types);
 
-$featured = db_all($mysqli, "
-  SELECT w.id, w.title, w.difficulty, LEFT(w.overview,150) excerpt,
+$featured = db_all($mysqli,"
+  SELECT w.id, w.title, w.difficulty, LEFT(w.overview,150) AS excerpt,
          g.title AS game, g.id AS game_id, g.image_url AS game_image
-  FROM walkthroughs w JOIN games g ON g.id=w.game_id
-  ORDER BY w.id DESC LIMIT 4
+  FROM walkthroughs w
+  JOIN games g ON g.id = w.game_id
+  ORDER BY w.id DESC
+  LIMIT 2
 ");
 
 /* Ambil komentar terbaru (10) */
@@ -105,7 +108,7 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
 ?>
 
 
-<!-- (2) Arcadia / Hero -->
+<!-- (1) Arcadia / Hero -->
 <div class="hero">
   <div class="hero-title">Arcadia</div>
   <div class="hero-sub">Cari walkthrough, chapter, dan tips yang jelas untuk menamatkan game favoritmu.</div>
@@ -115,7 +118,7 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
   </form>
 </div>
 
-<!-- (4) Daftar Game — satu kotak berisi 4 item (tanpa Genre) -->
+<!-- (2) Daftar Game — satu kotak berisi 4 item (tanpa Genre) -->
 <section id="games" class="section card">
   <h1>Daftar Game</h1>
   <p class="small">Pilih game untuk melihat walkthrough.</p>
@@ -142,9 +145,17 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
           <p class="desc clamp-2"><?= e($g['excerpt']) ?>…</p>
         </div>
 
-        <div class="game-actions">
-          <a class="btn ghost" href="game.php?id=<?= $g['id'] ?>">Lihat Detail</a>
-        </div>
+        <?php
+// build URL: jika belum login → arahkan ke login dengan ?next=
+$detailUrl = "game.php?id={$g['id']}";
+if (!is_user_logged_in()) {
+  $detailUrl = "/arcadia/public/auth/login.php?next=" . urlencode($detailUrl);
+}
+?>
+<div class="game-actions">
+  <a class="btn ghost" href="<?= e($detailUrl) ?>">Lihat Detail</a>
+</div>
+
       </div>
     <?php endforeach; ?>
 
@@ -184,12 +195,7 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
     <p class="small">Belum ada data.</p>
   <?php else: ?>
     <div id="feat4" class="feat4-wrap">
-      <button class="feat4-btn prev" type="button" aria-label="Sebelumnya" aria-disabled="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-        </svg>
-      </button>
-
+      
       <div class="feat4-viewport">
         <div class="feat4-track">
           <?php foreach ($feat4 as $f):
@@ -216,25 +222,29 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
                 <p class="feat4-desc clamp-2">
                   <?= e(mb_strimwidth($f['excerpt'] ?? '', 0, 160, '…', 'UTF-8')) ?>
                 </p>
-                <div class="feat4-actions">
-                  <a class="btn" href="walkthrough.php?id=<?= $f['id'] ?>">Buka Panduan</a>
-                </div>
+                <?php
+// build URL: jika belum login → arahkan ke login dengan ?next=
+$openUrl = "walkthrough.php?id={$f['id']}";
+if (!is_user_logged_in()) {
+  $openUrl = "/arcadia/public/auth/login.php?next=" . urlencode($openUrl);
+}
+?>
+<div class="feat4-actions">
+  <a class="btn" href="<?= e($openUrl) ?>">Buka Panduan</a>
+</div>
+
               </div>
             </article>
           <?php endforeach; ?>
         </div>
       </div>
 
-      <button class="feat4-btn next" type="button" aria-label="Berikutnya" aria-disabled="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z" />
-        </svg>
-      </button>
+      
     </div>
   <?php endif; ?>
 </section>
 
-<!-- (5) Komentar -->
+<!-- (4) Komentar -->
 <section id="comments" class="section">
   <div class="cmt-card">
     <div class="cmt-head">
@@ -320,7 +330,7 @@ $comments = db_all($mysqli, "SELECT id,name,content,created_at FROM comments ORD
   </div>
 </section>
 
-<!-- (6) Tentang — versi v2 -->
+<!-- (5) Tentang — versi v2 -->
 <section id="about" class="section card about--loose">
   <header class="about-head">
     <span class="pretitle">Tentang</span>

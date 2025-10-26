@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/../config.php'; ?>
 <?php require_once __DIR__ . '/../lib/helpers.php'; ?>
+<?php require_once __DIR__ . '/../lib/auth_user.php'; ?>
 <!doctype html>
 <html lang="id">
 
@@ -22,13 +23,22 @@
         <a class="nav-link <?= strpos($path, '/public/index.php') !== false ? 'active' : '' ?>"
           href="/arcadia/public/index.php">Beranda</a>
         <a class="nav-link <?= strpos($path, '/public/search.php') !== false ? 'active' : '' ?>"
-          href="/arcadia/public/search.php">Panduan</a>
-        <a class="nav-link" href="/arcadia/public/index.php#comments">Komentar</a>
+          href="/arcadia/public/search.php">Cari</a>  
         <a class="nav-link <?= (strpos($path, '/public/game.php') !== false || strpos($path, '/public/walkthrough.php') !== false) ? 'active' : '' ?>"
           href="/arcadia/public/index.php#games">Game</a>
         <a class="nav-link" href="/arcadia/public/index.php#about">Tentang</a>
-        <span class="nav-sep"></span>
-        <a class="nav-cta" href="/arcadia/public/admin/">Admin</a>
+          <span class="nav-sep"></span>
+          <div class="nav-actions">
+    <?php if (is_user_logged_in()): ?>
+      <!-- SEMENTARA: tidak tampilkan tombol Login Admin -->
+      <!-- Jika ingin, kamu bisa tampilkan menu profil/logout: -->
+      <a class="nav-cta outline" href="/arcadia/public/auth/logout.php">Logout</a>
+    <?php else: ?>
+      <!-- HANYA tampilkan Login & Daftar untuk user -->
+      <a class="nav-cta" href="/arcadia/public/auth/login.php">Login</a>
+      <a class="nav-cta outline" href="/arcadia/public/auth/register.php">Daftar</a>
+    <?php endif; ?>
+  </div>
       </nav>
 
 
