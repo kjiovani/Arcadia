@@ -163,59 +163,6 @@ $featured = db_all($mysqli, "
   <?php endif; ?>
 </section>
 
-<!-- (4) Tentang -->
-<section id="about" class="section card about--loose">
-  <header class="about-head">
-    <span class="pretitle">Tentang</span>
-    <h2>Arcadia — Guide hub rapi, cepat, dan enak dibaca.</h2>
-    <p class="muted">
-      Struktur konten <strong>Game → Walkthrough → Chapter</strong> bikin navigasi jelas, nyaman di mata, dan mudah dicari.
-    </p>
-
-    <div class="about-cta">
-      <a class="btn btn-grad" href="search.php"><span>Jelajahi Panduan</span></a>
-      <a class="btn btn-ghost" href="/arcadia/public/admin" target="_blank" rel="noopener"><span>Panel Admin</span></a>
-    </div>
-  </header>
-
-  <div class="about-body">
-    <div class="about-col">
-      <ul class="feature-grid">
-        <li><div class="fi">N</div><div><h3>Navigasi terstruktur</h3><p>Hierarki konsisten dari game sampai chapter, anti nyasar.</p></div></li>
-        <li><div class="fi">C</div><div><h3>Chapter ringkas</h3><p>Langkah fokus, minim spoiler, mudah di-scan.</p></div></li>
-        <li><div class="fi">S</div><div><h3>Pencarian cepat</h3><p>Cari boss, shrine, atau tips dalam hitungan detik.</p></div></li>
-        <li><div class="fi">P</div><div><h3>Keamanan bawaan</h3><p>Prepared statements + CSRF token pada form.</p></div></li>
-      </ul>
-
-      <div class="how">
-        <div class="how-step"><span>1</span> Pilih game</div>
-        <div class="how-step"><span>2</span> Buka walkthrough</div>
-        <div class="how-step"><span>3</span> Ikuti chapter</div>
-      </div>
-    </div>
-
-    <div class="about-col">
-      <div class="stats">
-        <div class="stat">
-          <div class="n"><?= count($games) ?></div>
-          <div class="l">Game</div>
-        </div>
-        <div class="stat">
-          <div class="n"><?= (int) db_one($mysqli, "SELECT COUNT(*) c FROM walkthroughs")['c'] ?></div>
-          <div class="l">Walkthrough</div>
-        </div>
-        <!-- Komentar dihapus dari statistik -->
-      </div>
-
-      <div class="stack">
-        <div class="stack-title">Teknologi</div>
-        <div class="stack-chips">
-          <span class="chip">PHP</span><span class="chip">HTML</span><span class="chip">CSS</span><span class="chip">JavaScript</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <?php include __DIR__ . '/_footer.php'; ?>
 

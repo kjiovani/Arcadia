@@ -320,28 +320,80 @@ a:hover {
   color: #e5e7eb
 }
 
+/* ===== Input base (pakai style kamu) ===== */
+:root{
+  /* opsional: override di tema kamu */
+  --input-bg: rgba(255, 255, 255, .06);
+}
+
 .input,
 select,
-textarea {
+textarea{
   width: 100%;
   padding: .7rem .85rem;
-  background: rgba(255, 255, 255, .06);
+  background: var(--input-bg);         /* pakai var supaya konsisten autofill */
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: .75rem;
-  outline: none
+  outline: none;
+  color-scheme: dark;                   /* hint ke browser: gunakan UI gelap */
 }
 
-.input::placeholder {
-  color: #a1a1aa
-}
+.input::placeholder{ color:#a1a1aa }
 
+/* Focus ring lembut (tetap sesuai gaya kamu) */
 .input:focus,
 select:focus,
-textarea:focus {
+textarea:focus{
   border-color: var(--primary);
-  box-shadow: 0 0 0 6px var(--ring)
+  box-shadow: 0 0 0 6px var(--ring);
 }
+
+/* ===== States tambahan yang sering kepakai ===== */
+.input:disabled,
+select:disabled,
+textarea:disabled{
+  opacity:.6; cursor:not-allowed;
+}
+
+.input[aria-invalid="true"],
+.input:invalid{
+  border-color:#ef4444;
+  box-shadow:0 0 0 6px rgba(239,68,68,.15);
+}
+
+/* Aksesibilitas: keyboard focus */
+.input:focus-visible{
+  outline:2px solid var(--primary);
+  outline-offset:2px;
+}
+
+/* ====== Matikan efek putih AUTOFILL (Chrome/Edge/Firefox) ====== */
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus,
+.input:-webkit-autofill:active{
+  -webkit-text-fill-color: var(--text) !important;
+  caret-color: var(--text);
+  /* isi ulang background autofill pakai warna yang sama dengan input */
+  box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+  transition: background-color 99999s ease-out 0s !important;
+  border-color: var(--border);
+}
+
+/* standar baru */
+.input:autofill{
+  background-color: var(--input-bg) !important;
+  color: var(--text) !important;
+}
+
+/* Firefox */
+.input:-moz-autofill{
+  box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+  -moz-text-fill-color: var(--text) !important;
+  caret-color: var(--text);
+}
+
 
 .grid {
   display: grid;
@@ -2808,6 +2860,66 @@ html {
   .btn-more-logout::before,.btn-more-logout::after{ display:none !important; }
 }
 
+/* ===== Sidebar kiri ===== */
+.app-shell{display:flex; gap:22px}
+.side{
+  position:sticky; top:84px;       /* nempel di viewport */
+  height:calc(100vh - 100px);
+  width:72px;
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 10px 28px rgba(0,0,0,.35);
+  display:flex; flex-direction:column; align-items:center; padding:12px 8px; gap:12px;
+}
+.side .dot{
+  width:46px; height:46px; border-radius:999px; display:grid; place-items:center;
+  background:#272637; border:1px solid rgba(255,255,255,.16); color:#e8e7ff;
+  cursor:pointer; text-decoration:none; font-size:18px; line-height:1;
+  transition:transform .08s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.side .dot:hover{ background:#2e2d41; border-color:rgba(255,255,255,.24); box-shadow:0 0 0 4px rgba(255,255,255,.06) inset }
+.side .dot:active{ transform:scale(.96) }
+.side .sp{ height:8px }           /* spacer kecil */
+.side .divider{ width:44px; height:1px; background:rgba(255,255,255,.12); margin:4px 0 }
 
+/* Tooltip ringan */
+.side .dot[data-tip]{ position:relative }
+.side .dot[data-tip]:hover::after{
+  content:attr(data-tip); position:absolute; left:58px; white-space:nowrap;
+  background:rgba(20,20,28,.96); border:1px solid rgba(255,255,255,.12);
+  padding:6px 8px; border-radius:10px; font-size:.9rem; opacity:.95;
+}
 
+/* ===== Kartu profil pengguna (di kanan konten atas) ===== */
+.profile-card{
+  display:flex; align-items:center; gap:14px;
+  padding:16px 18px; border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+  border:1px solid rgba(255,255,255,.08); box-shadow:0 8px 24px rgba(0,0,0,.28);
+}
+.p-ava{
+  width:54px;height:54px;border-radius:50%;
+  display:grid;place-items:center;font-weight:800;font-size:20px;
+  color:#ecebff; border:1px solid rgba(255,255,255,.16);
+  background:radial-gradient(120% 120% at 30% 20%, rgba(167,139,250,.45), rgba(217,70,239,.18));
+}
+.p-meta{display:flex;flex-direction:column;min-width:0}
+.p-name{font-weight:800;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-sub{opacity:.8;font-size:.95rem}
+.p-actions{margin-left:auto;display:flex;gap:8px}
+.p-actions .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.16)}
 
+/* ===== Responsif ===== */
+@media (max-width: 1024px){
+  .app-shell{ gap:16px }
+  .side{ width:58px }
+  .side .dot{ width:40px; height:40px; font-size:16px }
+}
+@media (max-width: 860px){
+  .app-shell{ gap:0 }
+  .side{ position:fixed; left:12px; bottom:12px; top:auto; height:auto; width:auto; flex-direction:row; padding:8px; gap:8px; z-index:40 }
+  .side .divider{ display:none }
+  .side .dot[data-tip]:hover::after{ display:none } /* matikan tooltip di mobile */
+  .content-wrap{ margin-left:0 }
+}

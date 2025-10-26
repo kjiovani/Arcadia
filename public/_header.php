@@ -26,7 +26,7 @@
           href="/arcadia/public/games.php">Game</a>
         <a class="nav-link <?= strpos($path, '/public/search.php') !== false ? 'active' : '' ?>"
           href="/arcadia/public/search.php">Cari</a>
-        <a class="nav-link" href="/arcadia/public/index.php#about">Tentang</a>
+        <a class="nav-link" href="/arcadia/public/about.php">Tentang</a>
         <a class="fx-underline" href="/arcadia/public/admin-info.php">Jadi Admin?</a>
         <span class="nav-sep"></span>
         <div class="nav-actions">
