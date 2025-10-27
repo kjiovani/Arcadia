@@ -2,8 +2,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/db.php';
 require_once __DIR__ . '/../lib/helpers.php';
-require_once __DIR__ . '/../lib/auth_user.php'; // buat cek login saat klik detail
-require_user_login($_SERVER['REQUEST_URI']);
+
 include __DIR__ . '/_header.php';
 
 /* === Query filter & pencarian === */
