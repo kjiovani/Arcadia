@@ -7,22 +7,73 @@ require_once __DIR__ . '/../lib/helpers.php';
 include __DIR__ . '/_header.php';
 
 // Statistik dinamis
-$gamesCount    = (int)(db_one($mysqli, "SELECT COUNT(*) c FROM games")['c'] ?? 0);
-$walksCount    = (int)(db_one($mysqli, "SELECT COUNT(*) c FROM walkthroughs")['c'] ?? 0);
-$chaptersCount = (int)(db_one($mysqli, "SELECT COUNT(*) c FROM chapters")['c'] ?? 0);
+$gamesCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM games")['c'] ?? 0);
+$walksCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM walkthroughs")['c'] ?? 0);
+$chaptersCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM chapters")['c'] ?? 0);
 ?>
 <style>
-.about-hero h1{margin:.5rem 0 1rem}
-.about-kpi{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px;margin:.75rem 0 1rem}
-.about-kpi .card{display:grid;place-items:center;padding:18px}
-.about-kpi .num{font-size:2rem;font-weight:800}
-.about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-.about-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:.75rem}
-.step{display:flex;align-items:flex-start;gap:10px}
-.step .badge{flex:0 0 auto}
-.faq{display:grid;grid-template-columns:1fr;gap:10px}
-.faq .q{font-weight:700;margin-bottom:.35rem}
-.stack{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .about-hero h1 {
+    margin: .5rem 0 1rem
+  }
+
+  .about-kpi {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+    gap: 12px;
+    margin: .75rem 0 1rem
+  }
+
+  .about-kpi .card {
+    display: grid;
+    place-items: center;
+    padding: 18px
+  }
+
+  .about-kpi .num {
+    font-size: 2rem;
+    font-weight: 800
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px
+  }
+
+  .about-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: .75rem
+  }
+
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px
+  }
+
+  .step .badge {
+    flex: 0 0 auto
+  }
+
+  .faq {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px
+  }
+
+  .faq .q {
+    font-weight: 700;
+    margin-bottom: .35rem
+  }
+
+  .stack {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px
+  }
 </style>
 
 <div class="card about-hero" style="padding:28px">
@@ -39,9 +90,18 @@ $chaptersCount = (int)(db_one($mysqli, "SELECT COUNT(*) c FROM chapters")['c'] ?
   </div>
 
   <div class="about-kpi">
-    <div class="card"><div class="num"><?= e($gamesCount) ?></div><div>Game</div></div>
-    <div class="card"><div class="num"><?= e($walksCount) ?></div><div>Walkthrough</div></div>
-    <div class="card"><div class="num"><?= e($chaptersCount) ?></div><div>Chapter</div></div>
+    <div class="card">
+      <div class="num"><?= e($gamesCount) ?></div>
+      <div>Game</div>
+    </div>
+    <div class="card">
+      <div class="num"><?= e($walksCount) ?></div>
+      <div>Walkthrough</div>
+    </div>
+    <div class="card">
+      <div class="num"><?= e($chaptersCount) ?></div>
+      <div>Chapter</div>
+    </div>
   </div>
 
   <div class="stack">

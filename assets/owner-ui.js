@@ -1,5 +1,5 @@
 
-(function(){
+(function () {
   // floating toggle
   const btn = document.createElement('button');
   btn.textContent = '✦ Edit UI';
@@ -56,30 +56,30 @@
     background:linear-gradient(135deg,var(--arc-p1,#c9b3ff),var(--arc-p2,#9a78ff) 55%,var(--arc-p3,#7a5cff));
     color:#0f0f16;font-weight:900;cursor:pointer
   `;
-  pane.querySelectorAll('.ui-btn').forEach(b=>b.style.cssText = styleBtn);
+  pane.querySelectorAll('.ui-btn').forEach(b => b.style.cssText = styleBtn);
   document.body.appendChild(pane);
 
-  btn.onclick = ()=> pane.style.display = pane.style.display==='none' ? 'block' : 'none';
+  btn.onclick = () => pane.style.display = pane.style.display === 'none' ? 'block' : 'none';
 
   // upload logo
   const upLogo = pane.querySelector('#upLogo');
-  upLogo.addEventListener('change', async ()=>{
-    if(!upLogo.files[0]) return;
-    const fd = new FormData(); fd.append('act','set_logo'); fd.append('logo',upLogo.files[0]);
-    const res = await fetch('/arcadia/public/admin/ui_api.php',{method:'POST',body:fd});
-    const j = await res.json(); alert(j.ok?'Logo diperbarui.':'Gagal: '+j.msg); if(j.ok) location.reload();
+  upLogo.addEventListener('change', async () => {
+    if (!upLogo.files[0]) return;
+    const fd = new FormData(); fd.append('act', 'set_logo'); fd.append('logo', upLogo.files[0]);
+    const res = await fetch('/arcadia/public/admin/ui_api.php', { method: 'POST', body: fd });
+    const j = await res.json(); alert(j.ok ? 'Logo diperbarui.' : 'Gagal: ' + j.msg); if (j.ok) location.reload();
   });
 
   // brand colors
-  pane.querySelector('#saveColors').onclick = async ()=>{
+  pane.querySelector('#saveColors').onclick = async () => {
     const fd = new FormData();
-    fd.append('act','set_colors');
+    fd.append('act', 'set_colors');
     fd.append('p1', pane.querySelector('#c1').value);
     fd.append('p2', pane.querySelector('#c2').value);
     fd.append('p3', pane.querySelector('#c3').value);
-    const r = await fetch('/arcadia/public/admin/ui_api.php',{method:'POST',body:fd});
-    const j = await r.json(); alert(j.ok?'Warna disimpan.':'Gagal: '+j.msg);
-    if(j.ok){
+    const r = await fetch('/arcadia/public/admin/ui_api.php', { method: 'POST', body: fd });
+    const j = await r.json(); alert(j.ok ? 'Warna disimpan.' : 'Gagal: ' + j.msg);
+    if (j.ok) {
       document.documentElement.style.setProperty('--arc-p1', pane.querySelector('#c1').value);
       document.documentElement.style.setProperty('--arc-p2', pane.querySelector('#c2').value);
       document.documentElement.style.setProperty('--arc-p3', pane.querySelector('#c3').value);
@@ -87,34 +87,34 @@
   };
 
   // cover focus pick
-  let coverTarget=null, meta={table:'walkthroughs',id:0};
-  document.addEventListener('click', e=>{
+  let coverTarget = null, meta = { table: 'walkthroughs', id: 0 };
+  document.addEventListener('click', e => {
     const img = e.target.closest('.cover-adjustable');
-    if(!img) return;
+    if (!img) return;
     e.preventDefault();
     coverTarget = img;
     meta.table = img.dataset.table || 'walkthroughs';
-    meta.id    = parseInt(img.dataset.id||'0',10);
-    const [xp,yp] = (getComputedStyle(img).objectPosition||'50% 50%').split(' ');
-    const toNum=s=>Math.max(0,Math.min(100,parseInt(String(s).replace('%','')||'50',10)));
+    meta.id = parseInt(img.dataset.id || '0', 10);
+    const [xp, yp] = (getComputedStyle(img).objectPosition || '50% 50%').split(' ');
+    const toNum = s => Math.max(0, Math.min(100, parseInt(String(s).replace('%', '') || '50', 10)));
     pane.querySelector('#fx').value = toNum(xp);
     pane.querySelector('#fy').value = toNum(yp);
-    pane.querySelector('#coverBox').style.display='block';
+    pane.querySelector('#coverBox').style.display = 'block';
   });
-  pane.querySelector('#fx').oninput = pane.querySelector('#fy').oninput = ()=>{
-    if(!coverTarget) return;
-    coverTarget.style.objectPosition = pane.querySelector('#fx').value+'% '+pane.querySelector('#fy').value+'%';
+  pane.querySelector('#fx').oninput = pane.querySelector('#fy').oninput = () => {
+    if (!coverTarget) return;
+    coverTarget.style.objectPosition = pane.querySelector('#fx').value + '% ' + pane.querySelector('#fy').value + '%';
   };
-  pane.querySelector('#saveCover').onclick = async ()=>{
-    if(!coverTarget) return;
+  pane.querySelector('#saveCover').onclick = async () => {
+    if (!coverTarget) return;
     const fd = new FormData();
-    fd.append('act','cover_focus');
+    fd.append('act', 'cover_focus');
     fd.append('table', meta.table);
     fd.append('id', meta.id);
     fd.append('fx', pane.querySelector('#fx').value);
     fd.append('fy', pane.querySelector('#fy').value);
-    const r = await fetch('/arcadia/public/admin/ui_api.php',{method:'POST',body:fd});
-    const j = await r.json(); alert(j.ok?'Cover disimpan.':'Gagal: '+j.msg);
+    const r = await fetch('/arcadia/public/admin/ui_api.php', { method: 'POST', body: fd });
+    const j = await r.json(); alert(j.ok ? 'Cover disimpan.' : 'Gagal: ' + j.msg);
   };
 })();
 

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/helpers.php';
 require_once __DIR__ . '/../../lib/auth.php';
+
 // settings.php boleh ada / tidak — kita TIDAK mengandalkannya
 require_admin();
 
@@ -357,7 +358,8 @@ include __DIR__ . '/_header.php';
         <div class="panel">
           <label class="small">Logo Brand (Navbar)</label>
           <div class="dz" data-dz>
-            <div class="preview"><?= $site_logo ? '<img src="' . e($site_logo) . '" onerror="this.remove()">' : '⟡' ?></div>
+            <div class="preview"><?= $site_logo ? '<img src="' . e($site_logo) . '" onerror="this.remove()">' : '⟡' ?>
+            </div>
             <div class="hint">Tarik & lepas atau klik untuk pilih (JPG/PNG/WEBP/GIF)</div>
             <input class="input-real" type="file" name="site_logo_file" accept="image/*">
           </div>
@@ -375,7 +377,8 @@ include __DIR__ . '/_header.php';
         <div class="panel">
           <label class="small">Logo “Daftar Game”</label>
           <div class="dz" data-dz>
-            <div class="preview"><?= $logo_games ? '<img src="' . e($logo_games) . '" onerror="this.remove()">' : '🎮' ?>
+            <div class="preview">
+              <?= $logo_games ? '<img src="' . e($logo_games) . '" onerror="this.remove()">' : '🎮' ?>
             </div>
             <div class="hint">Tarik & lepas atau klik untuk pilih</div>
             <input class="input-real" type="file" name="games_icon_file" accept="image/*">
@@ -385,7 +388,8 @@ include __DIR__ . '/_header.php';
         <div class="panel">
           <label class="small">Logo “Panduan Unggulan”</label>
           <div class="dz" data-dz>
-            <div class="preview"><?= $logo_feat ? '<img src="' . e($logo_feat) . '" onerror="this.remove()">' : '⭐' ?></div>
+            <div class="preview"><?= $logo_feat ? '<img src="' . e($logo_feat) . '" onerror="this.remove()">' : '⭐' ?>
+            </div>
             <div class="hint">Tarik & lepas atau klik untuk pilih</div>
             <input class="input-real" type="file" name="featured_icon_file" accept="image/*">
           </div>
@@ -394,7 +398,8 @@ include __DIR__ . '/_header.php';
         <div class="panel">
           <label class="small">Logo “Baru Diupdate”</label>
           <div class="dz" data-dz>
-            <div class="preview"><?= $logo_recent ? '<img src="' . e($logo_recent) . '" onerror="this.remove()">' : '✨' ?>
+            <div class="preview">
+              <?= $logo_recent ? '<img src="' . e($logo_recent) . '" onerror="this.remove()">' : '✨' ?>
             </div>
             <div class="hint">Tarik & lepas atau klik untuk pilih</div>
             <input class="input-real" type="file" name="recent_icon_file" accept="image/*">
@@ -452,30 +457,102 @@ $gamesForCrop = db_all($mysqli, "SELECT id,title,image_url FROM games ORDER BY i
   </p>
 
   <style>
-    .crop-grid{display:grid;gap:16px;grid-template-columns:repeat(2,minmax(0,1fr))}
-    @media (max-width:980px){.crop-grid{grid-template-columns:1fr}}
-    .crop-item{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
-      border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px}
-    .crop-frame{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;
-      background:#0f0f16;border:1px dashed rgba(255,255,255,.16)}
-    .crop-frame img{width:100%;height:100%;object-fit:cover;display:block;user-select:none}
-    .crop-ctrl{display:flex;gap:10px;align-items:center;margin-top:10px}
-    .btn.sm{padding:.45rem .8rem;border-radius:10px}
+    .crop-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr))
+    }
+
+    @media (max-width:980px) {
+      .crop-grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .crop-item {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .015));
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 16px;
+      padding: 12px
+    }
+
+    .crop-frame {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 16/9;
+      background: #0f0f16;
+      border: 1px dashed rgba(255, 255, 255, .16)
+    }
+
+    .crop-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none
+    }
+
+    .crop-ctrl {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px
+    }
+
+    .btn.sm {
+      padding: .45rem .8rem;
+      border-radius: 10px
+    }
 
     /* Modal */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000}
-    .modal.show{display:flex}
-    .modal-card{width:min(980px,92vw);background:#0f0f16;border:1px solid rgba(255,255,255,.12);
-      border-radius:18px;overflow:hidden}
-    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-    .modal-body{padding:12px}
-    #cropperBox{max-height:64vh}
-    #cropperBox img{max-width:100%;display:block}
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000
+    }
+
+    .modal.show {
+      display: flex
+    }
+
+    .modal-card {
+      width: min(980px, 92vw);
+      background: #0f0f16;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 18px;
+      overflow: hidden
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .modal-body {
+      padding: 12px
+    }
+
+    #cropperBox {
+      max-height: 64vh
+    }
+
+    #cropperBox img {
+      max-width: 100%;
+      display: block
+    }
   </style>
 
   <div class="crop-grid" id="cropGrid">
     <?php foreach ($gamesForCrop as $g): ?>
-      <div class="crop-item" data-id="<?= (int)$g['id'] ?>">
+      <div class="crop-item" data-id="<?= (int) $g['id'] ?>">
         <div class="crop-frame">
           <img class="crop-img" src="<?= e($g['image_url']) ?>" alt="<?= e($g['title']) ?>">
         </div>
@@ -508,64 +585,64 @@ $gamesForCrop = db_all($mysqli, "SELECT id,title,image_url FROM games ORDER BY i
 </section>
 
 <!-- Cropper.js -->
-<link  href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
+<link href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
 <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 
 <script>
-(()=>{
-  const modal   = document.getElementById('cropperModal');
-  const imgEl   = document.getElementById('cropperImg');
-  const btnSave = document.getElementById('btnCropSave');
-  const btnClose= document.getElementById('btnCropClose');
-  let cropper=null, currentCard=null;
+  (() => {
+    const modal = document.getElementById('cropperModal');
+    const imgEl = document.getElementById('cropperImg');
+    const btnSave = document.getElementById('btnCropSave');
+    const btnClose = document.getElementById('btnCropClose');
+    let cropper = null, currentCard = null;
 
-  // buka modal crop
-  document.querySelectorAll('.crop-item [data-crop]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      currentCard = btn.closest('.crop-item');
-      const src = currentCard.querySelector('.crop-img').getAttribute('src');
-      imgEl.src = src.replace(/\?v=\d+$/,''); // hilangkan cache buster
-      imgEl.onload = ()=>{
-        modal.classList.add('show');
-        cropper?.destroy();
-        cropper = new Cropper(imgEl, {
-          viewMode: 1,
-          aspectRatio: 16/9,
-          autoCropArea: 1,
-          movable: true,
-          zoomable: true,
-          scalable: false,
-          rotatable: false,
-          responsive: true,
-        });
-      };
+    // buka modal crop
+    document.querySelectorAll('.crop-item [data-crop]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentCard = btn.closest('.crop-item');
+        const src = currentCard.querySelector('.crop-img').getAttribute('src');
+        imgEl.src = src.replace(/\?v=\d+$/, ''); // hilangkan cache buster
+        imgEl.onload = () => {
+          modal.classList.add('show');
+          cropper?.destroy();
+          cropper = new Cropper(imgEl, {
+            viewMode: 1,
+            aspectRatio: 16 / 9,
+            autoCropArea: 1,
+            movable: true,
+            zoomable: true,
+            scalable: false,
+            rotatable: false,
+            responsive: true,
+          });
+        };
+      });
     });
-  });
 
-  const closeModal = ()=>{ cropper?.destroy(); cropper=null; modal.classList.remove('show'); };
-  btnClose.addEventListener('click', closeModal);
-  modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
+    const closeModal = () => { cropper?.destroy(); cropper = null; modal.classList.remove('show'); };
+    btnClose.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
-  // simpan crop -> upload blob ke cover_crop.php
-  btnSave.addEventListener('click', ()=>{
-    if(!cropper || !currentCard) return;
-    const gid = currentCard.dataset.id;
-    cropper.getCroppedCanvas({width:1600,height:900}).toBlob(async (blob)=>{
-      const fd = new FormData();
-      fd.append('game_id', gid);
-      fd.append('cover', blob, 'crop.webp');
-      try{
-        const res = await fetch('/arcadia/public/admin/cover_crop.php',{ method:'POST', body: fd });
-        const j = await res.json();
-        if(!j.ok) throw new Error(j.msg || 'Gagal menyimpan crop');
-        // update preview
-        currentCard.querySelector('.crop-img').src = j.url; // sudah berisi ?v=timestamp
-        alert('Crop tersimpan!');
-        closeModal();
-      }catch(err){ alert(err.message || 'Gagal menyimpan crop'); }
-    }, 'image/webp', 0.92);
-  });
-})();
+    // simpan crop -> upload blob ke cover_crop.php
+    btnSave.addEventListener('click', () => {
+      if (!cropper || !currentCard) return;
+      const gid = currentCard.dataset.id;
+      cropper.getCroppedCanvas({ width: 1600, height: 900 }).toBlob(async (blob) => {
+        const fd = new FormData();
+        fd.append('game_id', gid);
+        fd.append('cover', blob, 'crop.webp');
+        try {
+          const res = await fetch('/arcadia/public/admin/cover_crop.php', { method: 'POST', body: fd });
+          const j = await res.json();
+          if (!j.ok) throw new Error(j.msg || 'Gagal menyimpan crop');
+          // update preview
+          currentCard.querySelector('.crop-img').src = j.url; // sudah berisi ?v=timestamp
+          alert('Crop tersimpan!');
+          closeModal();
+        } catch (err) { alert(err.message || 'Gagal menyimpan crop'); }
+      }, 'image/webp', 0.92);
+    });
+  })();
 </script>
 
 

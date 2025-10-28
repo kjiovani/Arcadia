@@ -10,7 +10,7 @@ require_once __DIR__ . '/../lib/csrf.php';
 require_user_login($_SERVER['REQUEST_URI']);
 
 // Ambil game (pakai * supaya aman jika ada kolom baru)
-$id   = (int)($_GET['id'] ?? 0);
+$id = (int) ($_GET['id'] ?? 0);
 $game = db_one($mysqli, "SELECT * FROM games WHERE id=?", [$id], "i");
 
 // Output
@@ -19,7 +19,7 @@ echo '<link rel="stylesheet" href="/arcadia/public/assets/comments.css">';
 
 /* ===== CSS: kartu walkthrough + komentar ===== */
 echo
-'<style>
+  '<style>
 /* ===== Walkthrough grid ===== */
 .w-list{display:grid;gap:14px}
 @media(min-width:760px){.w-list{grid-template-columns:repeat(2,1fr)}}
@@ -81,10 +81,10 @@ echo '<div class="small">' . e($game['genre']) . ' • ' . e($game['platform']) 
 
 /* Cover Game adjustable (pakai image_url) */
 if (!empty($game['image_url'])) {
-  $gfx = (int)($game['cover_focus_x'] ?? 50);
-  $gfy = (int)($game['cover_focus_y'] ?? 50);
+  $gfx = (int) ($game['cover_focus_x'] ?? 50);
+  $gfy = (int) ($game['cover_focus_y'] ?? 50);
   echo '<div style="margin:.75rem 0 1rem;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08)">';
-  echo '<img class="cover-adjustable" data-table="games" data-id="' . (int)$game['id'] . '" src="' . e($game['image_url']) . '" alt="' . e($game['title']) . '" style="width:100%;max-height:300px;aspect-ratio:16/9;object-fit:cover;object-position:' . $gfx . '% ' . $gfy . '%">';
+  echo '<img class="cover-adjustable" data-table="games" data-id="' . (int) $game['id'] . '" src="' . e($game['image_url']) . '" alt="' . e($game['title']) . '" style="width:100%;max-height:300px;aspect-ratio:16/9;object-fit:cover;object-position:' . $gfx . '% ' . $gfy . '%">';
   echo '</div>';
 }
 
@@ -94,26 +94,30 @@ echo '</div>';
 /* ===== WALKTHROUGH: ambil cover & focus ===== */
 /* ===== WALKTHROUGH ===== */
 /* Deteksi kolom opsional agar query tidak error di skema lama */
-function has_col(mysqli $mysqli, string $table, string $col): bool {
+function has_col(mysqli $mysqli, string $table, string $col): bool
+{
   $sql = "SELECT COUNT(*) n
             FROM information_schema.COLUMNS
            WHERE TABLE_SCHEMA = DATABASE()
              AND TABLE_NAME   = ?
              AND COLUMN_NAME  = ?";
   $row = db_one($mysqli, $sql, [$table, $col], "ss");
-  return (int)($row['n'] ?? 0) > 0;
+  return (int) ($row['n'] ?? 0) > 0;
 }
 
 $w_has_cover = has_col($mysqli, 'walkthroughs', 'cover_url');
-$w_has_fx    = has_col($mysqli, 'walkthroughs', 'cover_focus_x');
-$w_has_fy    = has_col($mysqli, 'walkthroughs', 'cover_focus_y');
+$w_has_fx = has_col($mysqli, 'walkthroughs', 'cover_focus_x');
+$w_has_fy = has_col($mysqli, 'walkthroughs', 'cover_focus_y');
 
 $fields = [
-  "w.id", "w.title", "w.overview", "w.difficulty"
+  "w.id",
+  "w.title",
+  "w.overview",
+  "w.difficulty"
 ];
-$fields[] = $w_has_cover ? "w.cover_url"         : "NULL AS cover_url";
-$fields[] = $w_has_fx    ? "w.cover_focus_x"     : "NULL AS cover_focus_x";
-$fields[] = $w_has_fy    ? "w.cover_focus_y"     : "NULL AS cover_focus_y";
+$fields[] = $w_has_cover ? "w.cover_url" : "NULL AS cover_url";
+$fields[] = $w_has_fx ? "w.cover_focus_x" : "NULL AS cover_focus_x";
+$fields[] = $w_has_fy ? "w.cover_focus_y" : "NULL AS cover_focus_y";
 
 $sqlWalks = "SELECT " . implode(", ", $fields) . "
                FROM walkthroughs w
@@ -128,36 +132,37 @@ if (!$walks) {
 } else {
   echo '<div class="w-list">';
   foreach ($walks as $w) {
-    $fx = (int)($w['cover_focus_x'] ?? 50);
-    $fy = (int)($w['cover_focus_y'] ?? 50);
+    $fx = (int) ($w['cover_focus_x'] ?? 50);
+    $fy = (int) ($w['cover_focus_y'] ?? 50);
     echo '<article class="w-item">';
 
-      // thumb
-      echo '<div class="w-thumb">';
-      if (!empty($w['cover_url'])) {
-        echo '<img class="cover-adjustable"
+    // thumb
+    echo '<div class="w-thumb">';
+    if (!empty($w['cover_url'])) {
+      echo '<img class="cover-adjustable"
                    data-table="walkthroughs"
-                   data-id="'.(int)$w['id'].'"
-                   src="'.e($w['cover_url']).'"
-                   alt="'.e($w['title']).'"
-                   style="object-position:'.$fx.'% '.$fy.'%">';
-      } else {
-        $initial = mb_strtoupper(mb_substr($w['title'] ?: "?", 0, 1));
-        echo '<div class="w-fallback" aria-hidden="true">'.e($initial).'</div>';
-      }
-      echo '</div>';
+                   data-id="' . (int) $w['id'] . '"
+                   src="' . e($w['cover_url']) . '"
+                   alt="' . e($w['title']) . '"
+                   style="object-position:' . $fx . '% ' . $fy . '%">';
+    } else {
+      $initial = mb_strtoupper(mb_substr($w['title'] ?: "?", 0, 1));
+      echo '<div class="w-fallback" aria-hidden="true">' . e($initial) . '</div>';
+    }
+    echo '</div>';
 
-      // title + badge
-      echo '<h3 class="w-title">'.e($w['title']).' <span class="badge">'.e($w['difficulty']).'</span></h3>';
+    // title + badge
+    echo '<h3 class="w-title">' . e($w['title']) . ' <span class="badge">' . e($w['difficulty']) . '</span></h3>';
 
-      // excerpt
-      $prev = e(mb_strimwidth($w['overview'] ?? "", 0, 160, "…", "UTF-8"));
-      if (trim($prev) !== '') echo '<div class="w-meta">'.$prev.'</div>';
+    // excerpt
+    $prev = e(mb_strimwidth($w['overview'] ?? "", 0, 160, "…", "UTF-8"));
+    if (trim($prev) !== '')
+      echo '<div class="w-meta">' . $prev . '</div>';
 
-      // action
-      echo '<div style="margin-top:auto;display:flex;justify-content:flex-end">';
-        echo '<a class="btn" href="walkthrough.php?id='.(int)$w['id'].'">Buka</a>';
-      echo '</div>';
+    // action
+    echo '<div style="margin-top:auto;display:flex;justify-content:flex-end">';
+    echo '<a class="btn" href="walkthrough.php?id=' . (int) $w['id'] . '">Buka</a>';
+    echo '</div>';
 
     echo '</article>';
   }
@@ -171,13 +176,13 @@ echo '</div>';
 echo '<div class="card" id="komentar">';
 echo '<h2 class="c-title">Komentar</h2>';
 
-$me  = function_exists('current_user') ? current_user() : null;
-$uid = (int)($me['id'] ?? 0);
+$me = function_exists('current_user') ? current_user() : null;
+$uid = (int) ($me['id'] ?? 0);
 
 /* Form komentar */
 if (is_user_logged_in()) {
   echo '<form class="c-form" method="POST" action="comment_add.php">';
-  echo '<input type="hidden" name="game_id" value="' . (int)$id . '">';
+  echo '<input type="hidden" name="game_id" value="' . (int) $id . '">';
   csrf_field();
   echo '<label class="c-label" for="c-body">Tulis Komentar</label>';
   echo '<textarea id="c-body" name="body" rows="4" maxlength="1000" placeholder="Bagikan tips kamu…" required class="c-input"></textarea>';
@@ -197,7 +202,8 @@ $comments = db_all(
     WHERE c.game_id = ? AND c.status = 'PUBLISHED'
     ORDER BY c.created_at DESC
     LIMIT 100",
-  [$id], "i"
+  [$id],
+  "i"
 );
 
 if (!$comments) {
@@ -205,20 +211,22 @@ if (!$comments) {
 } else {
   echo '<div class="c-list">';
   foreach ($comments as $c) {
-    $cid       = (int)$c['id'];
-    $nama      = trim($c['user_name'] ?: 'Pengguna');
-    $initial   = e(mb_strtoupper(mb_substr($nama, 0, 1)));
-    $isOwner   = ((int)$c['user_id'] === $uid);
+    $cid = (int) $c['id'];
+    $nama = trim($c['user_name'] ?: 'Pengguna');
+    $initial = e(mb_strtoupper(mb_substr($nama, 0, 1)));
+    $isOwner = ((int) $c['user_id'] === $uid);
     $canManage = $isOwner || (function_exists('is_admin') && is_admin());
-    $waktu     = e(date('d M Y • H:i', strtotime($c['created_at'])));
+    $waktu = e(date('d M Y • H:i', strtotime($c['created_at'])));
 
     // Normalisasi isi (tahan “tangga” & “HJS”)
-    $raw   = str_replace(["\r\n","\r"], "\n", (string)$c['body']);
-    $lines = array_values(array_filter(array_map('trim', explode("\n", $raw)), fn($s)=>$s!==''));
+    $raw = str_replace(["\r\n", "\r"], "\n", (string) $c['body']);
+    $lines = array_values(array_filter(array_map('trim', explode("\n", $raw)), fn($s) => $s !== ''));
     if ($lines) {
       $lineCount = count($lines);
-      $shortCnt  = 0;
-      foreach ($lines as $ln) if (mb_strlen($ln) <= 2) $shortCnt++;
+      $shortCnt = 0;
+      foreach ($lines as $ln)
+        if (mb_strlen($ln) <= 2)
+          $shortCnt++;
       if ($lineCount >= 3 && ($shortCnt / $lineCount) >= 0.8) {
         $bodyText = preg_replace("/\s+/", " ", implode(" ", $lines));
       } else {
@@ -298,8 +306,8 @@ HTML;
 echo '</div>'; // #komentar
 
 /* ===== JS kebab & edit inline ===== */
-echo <<<JS
-<script>
+echo
+  '<script>
 document.addEventListener("click", (e) => {
   const kebab = e.target.closest(".c-kebab");
   const menu  = e.target.closest(".c-menu");
@@ -328,7 +336,6 @@ document.addEventListener("click", (e) => {
     if (edit && view){ edit.setAttribute("hidden",""); view.removeAttribute("hidden"); }
   }
 }, {passive:true});
-</script>
-JS;
+</script>';
 
 include __DIR__ . '/_footer.php';

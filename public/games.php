@@ -244,190 +244,221 @@ $genres = db_all($mysqli, "SELECT DISTINCT genre    FROM games WHERE genre<>''  
     inset: 0;
   }
 
- /* ====== ANIMASI TOMBOL — versi smooth ====== */
-.btn-fx{
-  position: relative;
-  overflow: hidden;
-  will-change: transform, box-shadow, background-color, border-color;
-  /* durasi & kurva lebih halus */
-  transition:
-    transform .34s cubic-bezier(.16,.84,.44,1),
-    box-shadow .34s cubic-bezier(.16,.84,.44,1),
-    background-color .34s cubic-bezier(.16,.84,.44,1),
-    border-color .34s cubic-bezier(.16,.84,.44,1),
-    color .34s cubic-bezier(.16,.84,.44,1);
-  transform: translateZ(0); /* cegah jitter pada GPU */
-}
+  /* ====== ANIMASI TOMBOL — versi smooth ====== */
+  .btn-fx {
+    position: relative;
+    overflow: hidden;
+    will-change: transform, box-shadow, background-color, border-color;
+    /* durasi & kurva lebih halus */
+    transition:
+      transform .34s cubic-bezier(.16, .84, .44, 1),
+      box-shadow .34s cubic-bezier(.16, .84, .44, 1),
+      background-color .34s cubic-bezier(.16, .84, .44, 1),
+      border-color .34s cubic-bezier(.16, .84, .44, 1),
+      color .34s cubic-bezier(.16, .84, .44, 1);
+    transform: translateZ(0);
+    /* cegah jitter pada GPU */
+  }
 
-/* hover: sedikit naik + glow lembut */
-.btn-fx:hover{
-  transform: translateY(-1px) scale(1.012);
-  box-shadow: 0 10px 26px rgba(139,92,246,.22);
-}
+  /* hover: sedikit naik + glow lembut */
+  .btn-fx:hover {
+    transform: translateY(-1px) scale(1.012);
+    box-shadow: 0 10px 26px rgba(139, 92, 246, .22);
+  }
 
-/* active: turun halus, cepat */
-.btn-fx:active{
-  transition-duration: .18s; /* responsif saat ditekan */
-  transform: translateY(0) scale(.992);
-  box-shadow: 0 6px 16px rgba(139,92,246,.16);
-}
+  /* active: turun halus, cepat */
+  .btn-fx:active {
+    transition-duration: .18s;
+    /* responsif saat ditekan */
+    transform: translateY(0) scale(.992);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, .16);
+  }
 
-/* ripple halus (lebih lembut dari sebelumnya) */
-.btn-fx::after{
-  content:"";
-  position:absolute; inset:-50%;
-  border-radius:inherit; pointer-events:none;
-  background:
-    radial-gradient(160px 160px at var(--x,50%) var(--y,50%),
-    rgba(255,255,255,.14), transparent 60%);
-  opacity:0;
-  transition: opacity .40s cubic-bezier(.16,.84,.44,1);
-}
-.btn-fx:hover::after{ opacity:.55; }
+  /* ripple halus (lebih lembut dari sebelumnya) */
+  .btn-fx::after {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      radial-gradient(160px 160px at var(--x, 50%) var(--y, 50%),
+        rgba(255, 255, 255, .14), transparent 60%);
+    opacity: 0;
+    transition: opacity .40s cubic-bezier(.16, .84, .44, 1);
+  }
 
-/* aksesibilitas */
-.btn-fx:focus-visible{
-  outline: 2px solid rgba(180,160,255,.55);
-  outline-offset: 2px;
-  border-radius: 12px;
-}
+  .btn-fx:hover::after {
+    opacity: .55;
+  }
 
-/* prefer-reduced-motion */
-@media (prefers-reduced-motion: reduce){
-  .btn-fx{ transition:none !important }
-  .btn-fx:hover, .btn-fx:active{ transform:none !important; box-shadow:none !important; }
-  .btn-fx::after{ display:none !important; }
-}
+  /* aksesibilitas */
+  .btn-fx:focus-visible {
+    outline: 2px solid rgba(180, 160, 255, .55);
+    outline-offset: 2px;
+    border-radius: 12px;
+  }
 
-/* === Palet ungu seperti tombol Login pada screenshot === */
-:root{
-  --violet-500: #8B5CF6;  /* ungu utama */
-  --violet-400: #A78BFA;  /* ungu muda (seperti Login) */
-  --violet-300: #C4B5FD;  /* ungu paling muda untuk hover halus */
-  --ink-dark : #0e0f1a;   /* teks gelap untuk kontras */
-}
+  /* prefer-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .btn-fx {
+      transition: none !important
+    }
 
-/* ===================== */
-/* Tombol TERAPKAN       */
-/* ===================== */
-.btn-apply{
-  background: linear-gradient(180deg, var(--violet-400) 0%, var(--violet-500) 100%);
-  border: 1px solid rgba(255,255,255,.08);
-  color: var(--ink-dark);
-  font-weight: 800;
-  border-radius: 14px;
-  transition:
-    transform .34s cubic-bezier(.16,.84,.44,1),
-    box-shadow .34s cubic-bezier(.16,.84,.44,1),
-    background-color .34s cubic-bezier(.16,.84,.44,1),
-    background-position .5s cubic-bezier(.22,.61,.36,1);
-}
+    .btn-fx:hover,
+    .btn-fx:active {
+      transform: none !important;
+      box-shadow: none !important;
+    }
 
-/* hover: warna jadi lebih mirip tombol Login (lebih muda) + glow halus */
-.btn-apply:hover{
-  background: linear-gradient(180deg, var(--violet-300) 0%, var(--violet-400) 100%);
-  box-shadow: 0 14px 32px rgba(139,92,246,.28);
-  transform: translateY(-1px) scale(1.012);
-}
+    .btn-fx::after {
+      display: none !important;
+    }
+  }
 
-/* tekan */
-.btn-apply:active{
-  transform: translateY(0) scale(.985);
-  box-shadow: 0 8px 18px rgba(139,92,246,.20);
-}
+  /* === Palet ungu seperti tombol Login pada screenshot === */
+  :root {
+    --violet-500: #8B5CF6;
+    /* ungu utama */
+    --violet-400: #A78BFA;
+    /* ungu muda (seperti Login) */
+    --violet-300: #C4B5FD;
+    /* ungu paling muda untuk hover halus */
+    --ink-dark: #0e0f1a;
+    /* teks gelap untuk kontras */
+  }
 
-/* ===================== */
-/* Tombol LIHAT DETAIL   */
-/* ===================== */
-.btn-detail{
-  border: 1px solid rgba(214,197,255,.22);
-  background: rgba(255,255,255,.02);
-  color: #e9e6ff;
-  transition:
-    transform .28s cubic-bezier(.16,.84,.44,1),
-    box-shadow .28s cubic-bezier(.16,.84,.44,1),
-    background-color .28s cubic-bezier(.16,.84,.44,1),
-    border-color .28s cubic-bezier(.16,.84,.44,1),
-    color .28s cubic-bezier(.16,.84,.44,1);
-}
+  /* ===================== */
+  /* Tombol TERAPKAN       */
+  /* ===================== */
+  .btn-apply {
+    background: linear-gradient(180deg, var(--violet-400) 0%, var(--violet-500) 100%);
+    border: 1px solid rgba(255, 255, 255, .08);
+    color: var(--ink-dark);
+    font-weight: 800;
+    border-radius: 14px;
+    transition:
+      transform .34s cubic-bezier(.16, .84, .44, 1),
+      box-shadow .34s cubic-bezier(.16, .84, .44, 1),
+      background-color .34s cubic-bezier(.16, .84, .44, 1),
+      background-position .5s cubic-bezier(.22, .61, .36, 1);
+  }
 
-/* hover: ubah ke ungu muda seperti tombol Login */
-.btn.btn-detail:hover{
-  background: var(--violet-400);      /* warna seperti Login */
-  border-color: var(--violet-400);
-  color: var(--ink-dark);             /* biar kontras dan mudah dibaca */
-  box-shadow: 0 12px 30px rgba(139,92,246,.32);
-  transform: translateY(-1px) scale(1.012);
-}
+  /* hover: warna jadi lebih mirip tombol Login (lebih muda) + glow halus */
+  .btn-apply:hover {
+    background: linear-gradient(180deg, var(--violet-300) 0%, var(--violet-400) 100%);
+    box-shadow: 0 14px 32px rgba(139, 92, 246, .28);
+    transform: translateY(-1px) scale(1.012);
+  }
 
-/* ikon panah muncul halus saat hover */
-.btn-detail .btn-ic{
-  display:inline-block;
-  transform: translateX(-4px);
-  opacity: 0;
-  transition: transform .28s cubic-bezier(.16,.84,.44,1), opacity .28s cubic-bezier(.16,.84,.44,1);
-}
-.btn-detail:hover .btn-ic{
-  transform: translateX(2px);
-  opacity: 1;
-}
+  /* tekan */
+  .btn-apply:active {
+    transform: translateY(0) scale(.985);
+    box-shadow: 0 8px 18px rgba(139, 92, 246, .20);
+  }
 
-/* tekan */
-.btn-detail:active{
-  transform: translateY(0) scale(.985);
-  box-shadow: 0 6px 16px rgba(139,92,246,.22);
-}
+  /* ===================== */
+  /* Tombol LIHAT DETAIL   */
+  /* ===================== */
+  .btn-detail {
+    border: 1px solid rgba(214, 197, 255, .22);
+    background: rgba(255, 255, 255, .02);
+    color: #e9e6ff;
+    transition:
+      transform .28s cubic-bezier(.16, .84, .44, 1),
+      box-shadow .28s cubic-bezier(.16, .84, .44, 1),
+      background-color .28s cubic-bezier(.16, .84, .44, 1),
+      border-color .28s cubic-bezier(.16, .84, .44, 1),
+      color .28s cubic-bezier(.16, .84, .44, 1);
+  }
 
-/* semua elemen interaktif di footer kartu harus di atas overlay */
-.card-game .card-body,
-.card-game .actions,
-.card-game .actions .btn,
-.card-game .btn-detail,
-.card-game .chip{
-  position: relative;
-  z-index: 2;
-}
+  /* hover: ubah ke ungu muda seperti tombol Login */
+  .btn.btn-detail:hover {
+    background: var(--violet-400);
+    /* warna seperti Login */
+    border-color: var(--violet-400);
+    color: var(--ink-dark);
+    /* biar kontras dan mudah dibaca */
+    box-shadow: 0 12px 30px rgba(139, 92, 246, .32);
+    transform: translateY(-1px) scale(1.012);
+  }
 
-/* Buat semua <select> tampil cocok tema gelap */
-select, .input[type="select"], select.input {
-  background-color: #1a1825;
-  color: #ece9ff;
-  border: 1px solid rgba(214,197,255,.28);
-  color-scheme: dark;                 /* hint ke browser untuk dropdown dark */
-}
+  /* ikon panah muncul halus saat hover */
+  .btn-detail .btn-ic {
+    display: inline-block;
+    transform: translateX(-4px);
+    opacity: 0;
+    transition: transform .28s cubic-bezier(.16, .84, .44, 1), opacity .28s cubic-bezier(.16, .84, .44, 1);
+  }
 
-/* Warna daftar opsi saat dropdown dibuka (didukung Chrome/Edge/Firefox) */
-select option {
-  background-color: #1a1825;          /* latar opsi */
-  color: #ece9ff;                      /* teks opsi */
-}
+  .btn-detail:hover .btn-ic {
+    transform: translateX(2px);
+    opacity: 1;
+  }
 
-/* Opsi terpilih / hover di daftar */
-select option:checked,
-select option:hover {
-  background-color: #8b5cf6 !important;   /* ungu Arcadia */
-  color: #0e0f1a !important;              /* teks gelap biar kontras */
-}
+  /* tekan */
+  .btn-detail:active {
+    transform: translateY(0) scale(.985);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, .22);
+  }
 
-/* Opsi nonaktif (mis. placeholder Semuanya) */
-select option[disabled],
-select option:disabled {
-  color: #8c84ab;
-}
+  /* semua elemen interaktif di footer kartu harus di atas overlay */
+  .card-game .card-body,
+  .card-game .actions,
+  .card-game .actions .btn,
+  .card-game .btn-detail,
+  .card-game .chip {
+    position: relative;
+    z-index: 2;
+  }
 
-/* Focus ring pada control select */
-select:focus {
-  outline: 2px solid rgba(180,160,255,.6);
-  outline-offset: 2px;
-  border-color: rgba(180,160,255,.6);
-}
+  /* Buat semua <select> tampil cocok tema gelap */
+  select,
+  .input[type="select"],
+  select.input {
+    background-color: #1a1825;
+    color: #ece9ff;
+    border: 1px solid rgba(214, 197, 255, .28);
+    color-scheme: dark;
+    /* hint ke browser untuk dropdown dark */
+  }
 
-/* (opsional) sudut & padding biar seragam */
-select, select.input {
-  border-radius: 12px;
-  padding: .6rem .9rem;
-}
+  /* Warna daftar opsi saat dropdown dibuka (didukung Chrome/Edge/Firefox) */
+  select option {
+    background-color: #1a1825;
+    /* latar opsi */
+    color: #ece9ff;
+    /* teks opsi */
+  }
 
+  /* Opsi terpilih / hover di daftar */
+  select option:checked,
+  select option:hover {
+    background-color: #8b5cf6 !important;
+    /* ungu Arcadia */
+    color: #0e0f1a !important;
+    /* teks gelap biar kontras */
+  }
+
+  /* Opsi nonaktif (mis. placeholder Semuanya) */
+  select option[disabled],
+  select option:disabled {
+    color: #8c84ab;
+  }
+
+  /* Focus ring pada control select */
+  select:focus {
+    outline: 2px solid rgba(180, 160, 255, .6);
+    outline-offset: 2px;
+    border-color: rgba(180, 160, 255, .6);
+  }
+
+  /* (opsional) sudut & padding biar seragam */
+  select,
+  select.input {
+    border-radius: 12px;
+    padding: .6rem .9rem;
+  }
 </style>
 
 
@@ -443,7 +474,8 @@ select, select.input {
     <select class="input" name="platform">
       <option value="">Semua Platform</option>
       <?php foreach ($platforms as $p): ?>
-        <option value="<?= e($p['platform']) ?>" <?= $platform === $p['platform'] ? 'selected' : '' ?>><?= e($p['platform']) ?>
+        <option value="<?= e($p['platform']) ?>" <?= $platform === $p['platform'] ? 'selected' : '' ?>>
+          <?= e($p['platform']) ?>
         </option>
       <?php endforeach; ?>
     </select>
@@ -469,14 +501,10 @@ select, select.input {
         ?>
         <article class="card-game">
           <?php if (!empty($gm['image_url'])): ?>
-  <?php $fx=(int)($gm['cover_focus_x'] ?? 50); $fy=(int)($gm['cover_focus_y'] ?? 50); ?>
-  <img
-    class="thumb cover-adjustable"
-    data-table="games"
-    data-id="<?= (int)$gm['id'] ?>"
-    src="<?= e($gm['image_url']) ?>"
-    alt="<?= e($gm['title']) ?>"
-    style="object-position:<?= $fx ?>% <?= $fy ?>%">
+            <?php $fx = (int) ($gm['cover_focus_x'] ?? 50);
+            $fy = (int) ($gm['cover_focus_y'] ?? 50); ?>
+            <img class="thumb cover-adjustable" data-table="games" data-id="<?= (int) $gm['id'] ?>"
+              src="<?= e($gm['image_url']) ?>" alt="<?= e($gm['title']) ?>" style="object-position:<?= $fx ?>% <?= $fy ?>%">
 
           <?php else: ?>
             <div class="thumb-fallback"><?= e(mb_strtoupper(mb_substr($gm['title'], 0, 1))) ?></div>
@@ -484,7 +512,8 @@ select, select.input {
           <div class="card-body">
             <h3 style="margin:.1rem 0 .15rem"><?= e($gm['title']) ?></h3>
             <div class="meta"><?= e($gm['platform']) ?> ·
-              <?= e($gm['genre'] ?: 'Uncategorized') ?>    <?= $gm['release_year'] ? ' · Rilis ' . e($gm['release_year']) : '' ?>
+              <?= e($gm['genre'] ?: 'Uncategorized') ?>
+              <?= $gm['release_year'] ? ' · Rilis ' . e($gm['release_year']) : '' ?>
             </div>
             <div class="desc"><?= e($gm['excerpt']) ?>…</div>
             <div class="actions">
@@ -521,5 +550,5 @@ select, select.input {
       b.style.setProperty('--x', (e.clientX - r.left) + 'px');
       b.style.setProperty('--y', (e.clientY - r.top) + 'px');
     });
-  }, {passive:true});
+  }, { passive: true });
 </script>

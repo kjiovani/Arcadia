@@ -321,30 +321,34 @@ a:hover {
 }
 
 /* ===== Input base (pakai style kamu) ===== */
-:root{
+:root {
   /* opsional: override di tema kamu */
   --input-bg: rgba(255, 255, 255, .06);
 }
 
 .input,
 select,
-textarea{
+textarea {
   width: 100%;
   padding: .7rem .85rem;
-  background: var(--input-bg);         /* pakai var supaya konsisten autofill */
+  background: var(--input-bg);
+  /* pakai var supaya konsisten autofill */
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: .75rem;
   outline: none;
-  color-scheme: dark;                   /* hint ke browser: gunakan UI gelap */
+  color-scheme: dark;
+  /* hint ke browser: gunakan UI gelap */
 }
 
-.input::placeholder{ color:#a1a1aa }
+.input::placeholder {
+  color: #a1a1aa
+}
 
 /* Focus ring lembut (tetap sesuai gaya kamu) */
 .input:focus,
 select:focus,
-textarea:focus{
+textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 6px var(--ring);
 }
@@ -352,22 +356,23 @@ textarea:focus{
 /* ===== States tambahan yang sering kepakai ===== */
 .input:disabled,
 select:disabled,
-textarea:disabled{
-  opacity:.6; cursor:not-allowed;
+textarea:disabled {
+  opacity: .6;
+  cursor: not-allowed;
 }
 
 
 /* Aksesibilitas: keyboard focus */
-.input:focus-visible{
-  outline:2px solid var(--primary);
-  outline-offset:2px;
+.input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* ====== Matikan efek putih AUTOFILL (Chrome/Edge/Firefox) ====== */
 .input:-webkit-autofill,
 .input:-webkit-autofill:hover,
 .input:-webkit-autofill:focus,
-.input:-webkit-autofill:active{
+.input:-webkit-autofill:active {
   -webkit-text-fill-color: var(--text) !important;
   caret-color: var(--text);
   /* isi ulang background autofill pakai warna yang sama dengan input */
@@ -377,13 +382,13 @@ textarea:disabled{
 }
 
 /* standar baru */
-.input:autofill{
+.input:autofill {
   background-color: var(--input-bg) !important;
   color: var(--text) !important;
 }
 
 /* Firefox */
-.input:-moz-autofill{
+.input:-moz-autofill {
   box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
   -moz-text-fill-color: var(--text) !important;
   caret-color: var(--text);
@@ -2744,21 +2749,31 @@ html {
 
 /* ===== Tombol Lainnya: sama seperti Logout + animasi halus ===== */
 .btn-pill,
-.btn-more-logout{
+.btn-more-logout {
   /* palet sama dengan Logout */
-  --violet-300:#C4B5FD;   /* paling muda */
-  --violet-400:#A78BFA;   /* atas */
-  --violet-500:#8B5CF6;   /* bawah */
-  --ease1:cubic-bezier(.22,.61,.36,1);
-  --ease2:cubic-bezier(.16,.84,.44,1);
+  --violet-300: #C4B5FD;
+  /* paling muda */
+  --violet-400: #A78BFA;
+  /* atas */
+  --violet-500: #8B5CF6;
+  /* bawah */
+  --ease1: cubic-bezier(.22, .61, .36, 1);
+  --ease2: cubic-bezier(.16, .84, .44, 1);
 
-  position:relative;
-  z-index:0;                               /* penting: stacking context */
-  display:inline-flex; align-items:center; justify-content:center;
-  min-height:44px; padding:.62rem 1.15rem;
-  border:0; border-radius:9999px;
-  color:#0f1222;                           /* teks gelap seperti Logout */
-  font-weight:800; letter-spacing:.2px;
+  position: relative;
+  z-index: 0;
+  /* penting: stacking context */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: .62rem 1.15rem;
+  border: 0;
+  border-radius: 9999px;
+  color: #0f1222;
+  /* teks gelap seperti Logout */
+  font-weight: 800;
+  letter-spacing: .2px;
 
   /* gradasi siap disapu */
   background: linear-gradient(180deg, var(--violet-400) 0%, var(--violet-500) 100%);
@@ -2766,8 +2781,8 @@ html {
   background-position: 0% 50%;
 
   box-shadow:
-    0 10px 24px rgba(139,92,246,.30),
-    inset 0 0 0 1px rgba(255,255,255,.18);
+    0 10px 24px rgba(139, 92, 246, .30),
+    inset 0 0 0 1px rgba(255, 255, 255, .18);
 
   transition:
     transform .36s var(--ease2),
@@ -2775,157 +2790,328 @@ html {
     background-position 1.1s var(--ease1),
     filter .36s var(--ease2);
   will-change: transform, box-shadow, background-position;
-  overflow:hidden;                         /* untuk sheen */
+  overflow: hidden;
+  /* untuk sheen */
 }
 
 /* ukuran/posisi */
-.more-wrap{ display:flex; justify-content:center; margin-top:1rem }
-.btn-more-logout{ min-width:170px; text-align:center }
+.more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem
+}
+
+.btn-more-logout {
+  min-width: 170px;
+  text-align: center
+}
 
 /* Glow ambient (dipakai juga untuk pulse) */
-.btn-more-logout::before{
-  content:"";
-  position:absolute; inset:-14px; border-radius:inherit; z-index:-1;
-  background: radial-gradient(60% 60% at 50% 50%, rgba(139,92,246,.30), transparent 72%);
+.btn-more-logout::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: inherit;
+  z-index: -1;
+  background: radial-gradient(60% 60% at 50% 50%, rgba(139, 92, 246, .30), transparent 72%);
   filter: blur(18px);
   opacity: 0;
   transition: opacity .6s var(--ease1);
 }
 
 /* Sheen / kilau melintas */
-.btn-more-logout::after{
-  content:"";
-  position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,.26) 12%, transparent 24%);
+.btn-more-logout::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, .26) 12%, transparent 24%);
   transform: translateX(-130%) skewX(-12deg);
   opacity: 0;
 }
 
 /* Hover: naik tipis + sweep gradasi + glow + sheen */
 .btn-pill:hover,
-.btn-more-logout:hover{
+.btn-more-logout:hover {
   transform: translateY(-1px) scale(1.012);
-  background-position: 100% 50%;          /* sweep terlihat */
+  background-position: 100% 50%;
+  /* sweep terlihat */
   box-shadow:
-    0 16px 40px rgba(139,92,246,.34),
-    inset 0 0 0 1px rgba(255,255,255,.16);
+    0 16px 40px rgba(139, 92, 246, .34),
+    inset 0 0 0 1px rgba(255, 255, 255, .16);
   filter: saturate(1.03) brightness(1.02);
 }
 
-.btn-more-logout:hover::before{
+.btn-more-logout:hover::before {
   opacity: 1;
   animation: haloPulse 1.6s var(--ease1) .05s infinite alternate both;
 }
 
-.btn-more-logout:hover::after{
+.btn-more-logout:hover::after {
   opacity: 1;
   animation: sheenSlide 1s var(--ease2) .05s forwards;
 }
 
 /* Active & fokus */
 .btn-pill:active,
-.btn-more-logout:active{
-  transition-duration:.2s;
+.btn-more-logout:active {
+  transition-duration: .2s;
   transform: translateY(0) scale(.985);
-  box-shadow: 0 8px 18px rgba(139,92,246,.22),
-              inset 0 0 0 1px rgba(255,255,255,.18);
+  box-shadow: 0 8px 18px rgba(139, 92, 246, .22),
+    inset 0 0 0 1px rgba(255, 255, 255, .18);
 }
+
 .btn-pill:focus-visible,
-.btn-more-logout:focus-visible{
-  outline:2px solid rgba(180,160,255,.6);
-  outline-offset:2px;
+.btn-more-logout:focus-visible {
+  outline: 2px solid rgba(180, 160, 255, .6);
+  outline-offset: 2px;
 }
 
 /* Keyframes */
-@keyframes haloPulse{
-  0%   { filter: blur(14px); opacity:.70; transform: scale(1.00); }
-  100% { filter: blur(20px); opacity:1.00; transform: scale(1.04); }
+@keyframes haloPulse {
+  0% {
+    filter: blur(14px);
+    opacity: .70;
+    transform: scale(1.00);
+  }
+
+  100% {
+    filter: blur(20px);
+    opacity: 1.00;
+    transform: scale(1.04);
+  }
 }
-@keyframes sheenSlide{
-  0%   { transform: translateX(-130%) skewX(-12deg); opacity:0; }
-  10%  { opacity:.9; }
-  100% { transform: translateX(130%) skewX(-12deg); opacity:0; }
+
+@keyframes sheenSlide {
+  0% {
+    transform: translateX(-130%) skewX(-12deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: .9;
+  }
+
+  100% {
+    transform: translateX(130%) skewX(-12deg);
+    opacity: 0;
+  }
 }
 
 /* Reduce motion */
-@media (prefers-reduced-motion: reduce){
-  .btn-pill,.btn-more-logout{ transition:none !important; background-position:50% 50% !important; }
-  .btn-pill:hover,.btn-more-logout:hover,
-  .btn-pill:active,.btn-more-logout:active{ transform:none !important; box-shadow:none !important; }
-  .btn-more-logout::before,.btn-more-logout::after{ display:none !important; }
+@media (prefers-reduced-motion: reduce) {
+
+  .btn-pill,
+  .btn-more-logout {
+    transition: none !important;
+    background-position: 50% 50% !important;
+  }
+
+  .btn-pill:hover,
+  .btn-more-logout:hover,
+  .btn-pill:active,
+  .btn-more-logout:active {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .btn-more-logout::before,
+  .btn-more-logout::after {
+    display: none !important;
+  }
 }
 
 /* ===== Sidebar kiri ===== */
-.app-shell{display:flex; gap:22px}
-.side{
-  position:sticky; top:84px;       /* nempel di viewport */
-  height:calc(100vh - 100px);
-  width:72px;
-  border-radius:18px;
-  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:0 10px 28px rgba(0,0,0,.35);
-  display:flex; flex-direction:column; align-items:center; padding:12px 8px; gap:12px;
+.app-shell {
+  display: flex;
+  gap: 22px
 }
-.side .dot{
-  width:46px; height:46px; border-radius:999px; display:grid; place-items:center;
-  background:#272637; border:1px solid rgba(255,255,255,.16); color:#e8e7ff;
-  cursor:pointer; text-decoration:none; font-size:18px; line-height:1;
-  transition:transform .08s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+
+.side {
+  position: sticky;
+  top: 84px;
+  /* nempel di viewport */
+  height: calc(100vh - 100px);
+  width: 72px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .02));
+  border: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  gap: 12px;
 }
-.side .dot:hover{ background:#2e2d41; border-color:rgba(255,255,255,.24); box-shadow:0 0 0 4px rgba(255,255,255,.06) inset }
-.side .dot:active{ transform:scale(.96) }
-.side .sp{ height:8px }           /* spacer kecil */
-.side .divider{ width:44px; height:1px; background:rgba(255,255,255,.12); margin:4px 0 }
+
+.side .dot {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #272637;
+  border: 1px solid rgba(255, 255, 255, .16);
+  color: #e8e7ff;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 18px;
+  line-height: 1;
+  transition: transform .08s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.side .dot:hover {
+  background: #2e2d41;
+  border-color: rgba(255, 255, 255, .24);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, .06) inset
+}
+
+.side .dot:active {
+  transform: scale(.96)
+}
+
+.side .sp {
+  height: 8px
+}
+
+/* spacer kecil */
+.side .divider {
+  width: 44px;
+  height: 1px;
+  background: rgba(255, 255, 255, .12);
+  margin: 4px 0
+}
 
 /* Tooltip ringan */
-.side .dot[data-tip]{ position:relative }
-.side .dot[data-tip]:hover::after{
-  content:attr(data-tip); position:absolute; left:58px; white-space:nowrap;
-  background:rgba(20,20,28,.96); border:1px solid rgba(255,255,255,.12);
-  padding:6px 8px; border-radius:10px; font-size:.9rem; opacity:.95;
+.side .dot[data-tip] {
+  position: relative
+}
+
+.side .dot[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 58px;
+  white-space: nowrap;
+  background: rgba(20, 20, 28, .96);
+  border: 1px solid rgba(255, 255, 255, .12);
+  padding: 6px 8px;
+  border-radius: 10px;
+  font-size: .9rem;
+  opacity: .95;
 }
 
 /* ===== Kartu profil pengguna (di kanan konten atas) ===== */
-.profile-card{
-  display:flex; align-items:center; gap:14px;
-  padding:16px 18px; border-radius:16px;
-  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
-  border:1px solid rgba(255,255,255,.08); box-shadow:0 8px 24px rgba(0,0,0,.28);
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .015));
+  border: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
 }
-.p-ava{
-  width:54px;height:54px;border-radius:50%;
-  display:grid;place-items:center;font-weight:800;font-size:20px;
-  color:#ecebff; border:1px solid rgba(255,255,255,.16);
-  background:radial-gradient(120% 120% at 30% 20%, rgba(167,139,250,.45), rgba(217,70,239,.18));
+
+.p-ava {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 20px;
+  color: #ecebff;
+  border: 1px solid rgba(255, 255, 255, .16);
+  background: radial-gradient(120% 120% at 30% 20%, rgba(167, 139, 250, .45), rgba(217, 70, 239, .18));
 }
-.p-meta{display:flex;flex-direction:column;min-width:0}
-.p-name{font-weight:800;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.p-sub{opacity:.8;font-size:.95rem}
-.p-actions{margin-left:auto;display:flex;gap:8px}
-.p-actions .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.16)}
+
+.p-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0
+}
+
+.p-name {
+  font-weight: 800;
+  letter-spacing: .2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis
+}
+
+.p-sub {
+  opacity: .8;
+  font-size: .95rem
+}
+
+.p-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px
+}
+
+.p-actions .btn.ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, .16)
+}
 
 /* ===== Responsif ===== */
-@media (max-width: 1024px){
-  .app-shell{ gap:16px }
-  .side{ width:58px }
-  .side .dot{ width:40px; height:40px; font-size:16px }
+@media (max-width: 1024px) {
+  .app-shell {
+    gap: 16px
+  }
+
+  .side {
+    width: 58px
+  }
+
+  .side .dot {
+    width: 40px;
+    height: 40px;
+    font-size: 16px
+  }
 }
-@media (max-width: 860px){
-  .app-shell{ gap:0 }
-  .side{ position:fixed; left:12px; bottom:12px; top:auto; height:auto; width:auto; flex-direction:row; padding:8px; gap:8px; z-index:40 }
-  .side .divider{ display:none }
-  .side .dot[data-tip]:hover::after{ display:none } /* matikan tooltip di mobile */
-  .content-wrap{ margin-left:0 }
+
+@media (max-width: 860px) {
+  .app-shell {
+    gap: 0
+  }
+
+  .side {
+    position: fixed;
+    left: 12px;
+    bottom: 12px;
+    top: auto;
+    height: auto;
+    width: auto;
+    flex-direction: row;
+    padding: 8px;
+    gap: 8px;
+    z-index: 40
+  }
+
+  .side .divider {
+    display: none
+  }
+
+  .side .dot[data-tip]:hover::after {
+    display: none
+  }
+
+  /* matikan tooltip di mobile */
+  .content-wrap {
+    margin-left: 0
+  }
 }
 
 /* Form dark theme (global) */
 .input,
 textarea,
 select {
-  background: rgba(255,255,255,.06);
+  background: rgba(255, 255, 255, .06);
   color: #eee;
-  border: 1px solid rgba(255,255,255,.12);
+  border: 1px solid rgba(255, 255, 255, .12);
   border-radius: 12px;
 }
 
@@ -2934,13 +3120,14 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(167,139,250,.25);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, .25);
 }
 
 /* Dropdown list saat SELECT dibuka (Chrome/Edge/Firefox/Safari) */
 select option,
 select optgroup {
-  background-color: #11121a; /* dark */
+  background-color: #11121a;
+  /* dark */
   color: #eee;
 }
 
@@ -2953,13 +3140,23 @@ select option:checked {
 
 /* Safari/WebKit – pastikan teks tetap terang */
 @supports (-webkit-appearance: none) or (-moz-appearance: none) {
-  select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+  select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
 }
 
 /* Optional: scrollbar dropdown (WebKit) biar nyatu */
-select::-webkit-scrollbar { width: 10px; }
+select::-webkit-scrollbar {
+  width: 10px;
+}
+
 select::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,.15);
+  background: rgba(255, 255, 255, .15);
   border-radius: 10px;
 }
-select::-webkit-scrollbar-track { background: transparent; }
+
+select::-webkit-scrollbar-track {
+  background: transparent;
+}

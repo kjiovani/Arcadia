@@ -307,7 +307,11 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
   }
 
   /* ===== Kotak cover PERSEGI khusus section Daftar Game ===== */
-  #games{ --game-thumb: 102px; }   /* samakan dengan ukuran kotak + di bawah */
+  #games {
+    --game-thumb: 102px;
+  }
+
+  /* samakan dengan ukuran kotak + di bawah */
 
 
   /* samakan dengan ukuran kotak “+” kamu */
@@ -379,16 +383,17 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
     <?php foreach ($gamesLimited as $g): ?>
       <div class="game-item v2">
         <div class="game-thumbbox">
-  <div class="cover-frame">
-    <?php if (!empty($g['image_url'])): ?>
-      <?php $fx=(int)($g['cover_focus_x'] ?? 50); $fy=(int)($g['cover_focus_y'] ?? 50); ?>
-      <img src="<?= e($g['image_url']) ?>" alt="<?= e($g['title']) ?>"
-           style="object-fit:cover;object-position:<?= $fx ?>% <?= $fy ?>%;">
-    <?php else: ?>
-      <div class="placeholder-thumb big" data-initial="<?= e(mb_strtoupper(mb_substr($g['title'],0,1))) ?>"></div>
-    <?php endif; ?>
-  </div>
-</div>
+          <div class="cover-frame">
+            <?php if (!empty($g['image_url'])): ?>
+              <?php $fx = (int) ($g['cover_focus_x'] ?? 50);
+              $fy = (int) ($g['cover_focus_y'] ?? 50); ?>
+              <img src="<?= e($g['image_url']) ?>" alt="<?= e($g['title']) ?>"
+                style="object-fit:cover;object-position:<?= $fx ?>% <?= $fy ?>%;">
+            <?php else: ?>
+              <div class="placeholder-thumb big" data-initial="<?= e(mb_strtoupper(mb_substr($g['title'], 0, 1))) ?>"></div>
+            <?php endif; ?>
+          </div>
+        </div>
 
 
 

@@ -131,7 +131,7 @@ $authText = $logged ? 'Logout' : 'Login';
         <div class="f-top">
             <!-- Brand singkat -->
             <div class="f-brand">
-                
+
                 <div>
                     <h3>Arcadia</h3>
                     <p class="justify">
