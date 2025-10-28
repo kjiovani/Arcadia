@@ -5,8 +5,13 @@ require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/helpers.php';
 require_once __DIR__ . '/../../lib/csrf.php';
 require_once __DIR__ . '/../../lib/auth.php';
+require_once __DIR__ . '/../../lib/validation.php'; // <-- penting: biar str_trim tersedia
 require_admin();
 if (session_status() === PHP_SESSION_NONE) session_start();
+
+if (!function_exists('e')) {
+  function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+}
 
 $uid = (int)($_SESSION['user']['id'] ?? ($_SESSION['user_id'] ?? 0));
 if ($uid <= 0) redirect('/arcadia/public/login.php');
@@ -45,7 +50,7 @@ function fetch_me(mysqli $mysqli, int $uid, string $colList) {
   return db_one($mysqli, "SELECT $colList FROM users WHERE id=?", [$uid], 'i');
 }
 
-$me  = fetch_me($mysqli, $uid, $colList);
+$me  = fetch_me($mysqli, $uid, $colList) ?: [];
 $ok = null; $err = null;
 
 // direktori upload
@@ -108,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'save_profile') {
+      // str_trim tersedia dari validation.php; bisa diganti trim() bila mau
       $name = str_trim($_POST['name'] ?? '');
       $pass = (string)($_POST['password'] ?? '');
       $bio  = $hasBio ? str_trim($_POST['bio'] ?? '') : null;
@@ -128,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $ok='Profil berhasil diperbarui.';
     }
 
+    // refresh data
     $me = fetch_me($mysqli, $uid, $colList);
   } catch (Exception $e) {
     $err = $e->getMessage();
@@ -147,7 +154,6 @@ include __DIR__ . '/_header.php';
   .profile-inner{border-radius:18px;background:rgba(0,0,0,.18);padding:14px 14px 18px}
   .banner{width:100%;aspect-ratio:6/2;border-radius:14px;overflow:hidden;background:var(--soft)}
   .banner img{width:100%;height:100%;object-fit:cover}
-  /* AVATAR DI LUAR BANNER */
   .ava-out{
     width:132px;height:132px;border-radius:28px;margin:-36px auto 8px;
     border:3px solid rgba(0,0,0,.35);overflow:hidden;
@@ -230,12 +236,14 @@ include __DIR__ . '/_header.php';
     <?php if ($hasAvatar): ?>
     <div class="section">
       <h4 style="margin:0 0 .6rem">Avatar</h4>
+      <!-- Form Upload Avatar -->
       <form method="post" enctype="multipart/form-data" id="frmAvatar">
         <?php csrf_field(); ?>
         <input type="hidden" name="action" value="upload_avatar">
         <label class="drop" id="dropAvatar">
           <div class="drop-preview" id="pvAvatar">
-            <?php if (!empty($me['avatar_url'])): ?><img src="<?= e($me['avatar_url']) ?>" alt=""><?php else: ?><span>A</span><?php endif; ?>
+            <?php if (!empty($me['avatar_url'])): ?><img src="<?= e($me['avatar_url']) ?>" alt="">
+            <?php else: ?><span>A</span><?php endif; ?>
           </div>
           <div>
             <div><strong>Tarik & jatuhkan</strong> gambar ke sini atau klik untuk pilih</div>
@@ -243,22 +251,24 @@ include __DIR__ . '/_header.php';
             <input type="file" name="avatar" id="inpAvatar" accept="image/png,image/jpeg,image/webp" hidden required>
           </div>
         </label>
-        <div style="display:flex;gap:10px;margin-top:10px">
-          <button class="btn-primary">Upload</button>
-          <?php if (!empty($me['avatar_url'])): ?>
-            <form method="post">
-              <?php csrf_field(); ?><input type="hidden" name="action" value="remove_avatar">
-              <button class="btn-ghost" formaction="" formmethod="post" name="action" value="remove_avatar">Hapus Avatar</button>
-            </form>
-          <?php endif; ?>
-        </div>
+        <button class="btn-primary" style="margin-top:10px">Upload</button>
       </form>
+
+      <!-- Form Hapus Avatar (terpisah, tidak nested) -->
+      <?php if (!empty($me['avatar_url'])): ?>
+      <form method="post" style="margin-top:8px">
+        <?php csrf_field(); ?>
+        <input type="hidden" name="action" value="remove_avatar">
+        <button class="btn-ghost">Hapus Avatar</button>
+      </form>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
 
     <?php if ($hasBanner): ?>
     <div class="section">
       <h4 style="margin:0 0 .6rem">Banner</h4>
+      <!-- Form Upload Banner -->
       <form method="post" enctype="multipart/form-data" id="frmBanner">
         <?php csrf_field(); ?>
         <input type="hidden" name="action" value="upload_banner">
@@ -272,16 +282,17 @@ include __DIR__ . '/_header.php';
             <input type="file" name="banner" id="inpBanner" accept="image/png,image/jpeg,image/webp" hidden required>
           </div>
         </label>
-        <div style="display:flex;gap:10px;margin-top:10px">
-          <button class="btn-primary">Upload</button>
-          <?php if (!empty($me['banner_url'])): ?>
-            <form method="post">
-              <?php csrf_field(); ?><input type="hidden" name="action" value="remove_banner">
-              <button class="btn-ghost" formaction="" formmethod="post" name="action" value="remove_banner">Hapus Banner</button>
-            </form>
-          <?php endif; ?>
-        </div>
+        <button class="btn-primary" style="margin-top:10px">Upload</button>
       </form>
+
+      <!-- Form Hapus Banner (terpisah) -->
+      <?php if (!empty($me['banner_url'])): ?>
+      <form method="post" style="margin-top:8px">
+        <?php csrf_field(); ?>
+        <input type="hidden" name="action" value="remove_banner">
+        <button class="btn-ghost">Hapus Banner</button>
+      </form>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
 
@@ -339,4 +350,4 @@ include __DIR__ . '/_header.php';
   bindDrop('dropBanner','inpBanner','pvBanner', 3*1024*1024);
 </script>
 
-<?php include __DIR__ . '/_footer.php'; ?>
+<?php include __DIR__ . '/_footer.php';

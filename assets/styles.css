@@ -2919,3 +2919,47 @@ html {
   .content-wrap{ margin-left:0 }
 }
 
+/* Form dark theme (global) */
+.input,
+textarea,
+select {
+  background: rgba(255,255,255,.06);
+  color: #eee;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+}
+
+.input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(167,139,250,.25);
+}
+
+/* Dropdown list saat SELECT dibuka (Chrome/Edge/Firefox/Safari) */
+select option,
+select optgroup {
+  background-color: #11121a; /* dark */
+  color: #eee;
+}
+
+/* Hover/selected di list */
+select option:hover,
+select option:checked {
+  background-color: #1a1b24;
+  color: #fff;
+}
+
+/* Safari/WebKit – pastikan teks tetap terang */
+@supports (-webkit-appearance: none) or (-moz-appearance: none) {
+  select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+}
+
+/* Optional: scrollbar dropdown (WebKit) biar nyatu */
+select::-webkit-scrollbar { width: 10px; }
+select::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.15);
+  border-radius: 10px;
+}
+select::-webkit-scrollbar-track { background: transparent; }

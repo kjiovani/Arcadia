@@ -2,6 +2,14 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/db.php';
 require_once __DIR__ . '/../lib/helpers.php';
+require_once __DIR__ . '/../lib/validation.php';
+
+$action = $_POST['action'] ?? ($_GET['action'] ?? 'list');  // <<— pasang di sini
+
+// Verifikasi CSRF pada semua POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  csrf_verify();
+}
 
 include __DIR__ . '/_header.php';
 

@@ -2,18 +2,38 @@
 require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../lib/helpers.php';
 require_once __DIR__ . '/../../lib/auth.php';
+require_once __DIR__ . '/../../lib/db.php';          // <-- tambahkan
 require_admin();
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 $path = $_SERVER['SCRIPT_NAME'] ?? '';
 function active($needle, $path) {
   return (strpos($path, $needle) !== false) ? 'is-active' : '';
 }
-$userName = e($_SESSION['user']['name'] ?? 'Admin');
-$userRole = strtolower((string)($_SESSION['user']['role'] ?? 'admin'));
 
-/* === Tambahan: dukung avatar dari session bila tersedia === */
-$userAvatar = trim((string)($_SESSION['user']['avatar_url'] ?? '')); // kosong = fallback inisial
+/* ==== Ambil user dari session, lalu REFRESH dari DB agar avatar terbaru tampil ==== */
+$me      = $_SESSION['user'] ?? [];
+$uid     = (int)($me['id'] ?? 0);
+
+if ($uid > 0) {
+  // hanya ambil kolom yang perlu
+  $row = db_one($mysqli, "SELECT name, role, avatar_url FROM users WHERE id=?", [$uid], 'i');
+  if ($row) {
+    // sinkronkan ke session
+    foreach (['name','role','avatar_url'] as $k) {
+      if (isset($row[$k]) && $row[$k] !== null && $row[$k] !== '') {
+        $_SESSION['user'][$k] = $row[$k];
+      }
+    }
+    $me = $_SESSION['user'];
+  }
+}
+
+$userName   = e($me['name'] ?? 'Admin');
+$userRole   = strtolower((string)($me['role'] ?? 'admin'));
+$userAvatar = trim((string)($me['avatar_url'] ?? '')); // kosong => fallback inisial
 ?>
+
 <!doctype html>
 <html lang="id">
 <head>
@@ -93,12 +113,12 @@ $userAvatar = trim((string)($_SESSION['user']['avatar_url'] ?? '')); // kosong =
       <div class="nav-title">Navigasi</div>
       <ul class="nav-list">
         <li><a class="nav-link <?= active('/admin/profile.php', $path) ?> <?= active('/admin/admin-info.php', $path) ?>" href="/arcadia/public/admin/profile.php">Profil</a></li>
-        <li><a class="nav-link <?= active('/admin/index.php', $path) ?> <?= active('/admin/', $path) ?>" href="/arcadia/public/admin/">Dashboard</a></li>
+        <li><a class="nav-link <?= active('/admin/index.php', $path) ?>" href="/arcadia/public/admin/">Dashboard</a></li>
         <li><a class="nav-link <?= active('/admin/games.php', $path) ?>" href="/arcadia/public/admin/games.php">Games</a></li>
         <li><a class="nav-link <?= active('/admin/walkthroughs.php', $path) ?>" href="/arcadia/public/admin/walkthroughs.php">Walkthroughs</a></li>
         <li><a class="nav-link <?= active('/admin/chapters.php', $path) ?>" href="/arcadia/public/admin/chapters.php">Chapters</a></li>
         <li><a class="nav-link <?= active('/admin/tags.php', $path) ?>" href="/arcadia/public/admin/tags.php">Tags</a></li>
-        <li><a class="nav-link <?= active('/admin/mediafiles.php', $path) ?>" href="/arcadia/public/admin/mediafiles.php">Media</a></li>
+        
       </ul>
     </div>
 
