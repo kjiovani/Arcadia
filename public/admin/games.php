@@ -10,8 +10,8 @@ require_once __DIR__ . '/../../lib/csrf.php';
 require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/validation.php';
 
-/* ✅ Perbaikan penting: baca action dari GET ATAU POST */
-$action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
+/* ✅ Utamakan POST lalu GET agar submit Edit tidak “mentok” di action=edit (GET) */
+$action = $_POST['action'] ?? ($_GET['action'] ?? 'list');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') csrf_verify();
 
@@ -35,19 +35,16 @@ function handle_cover_upload(string $title): ?string {
   $ok = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'];
   if (!isset($ok[$mime])) throw new Exception('Format cover harus jpg/png/webp.');
 
-  /* ✅ Pastikan path stabil relatif ke file ini
-     /arcadia/public/admin/games.php  -> __DIR__ = .../arcadia/public/admin
-     Naik 3x => .../arcadia
-  */
-  $projectRoot = realpath(__DIR__ . '/../../..'); // .../arcadia
-  $uploadRoot  = $projectRoot . '/uploads/covers';
+  // nama file aman
+  $slug = strtolower(trim(preg_replace('~[^a-z0-9]+~i','-',$title ?: 'cover'), '-'));
+
+  // ==== pakai konstanta & helper dari config.php ====
+  $uploadRoot = COVERS_PATH;                           // path file di disk
   if (!is_dir($uploadRoot)) @mkdir($uploadRoot, 0775, true);
 
-  $slug = strtolower(trim(preg_replace('~[^a-z0-9]+~i','-',$title ?: 'cover'), '-'));
-  $name = $slug . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(3)) . '.' . $ok[$mime];
-
-  $destFs  = $uploadRoot . '/' . $name;                   // path file di disk
-  $destUrl = '/arcadia/uploads/covers/' . $name;          // URL publik (akses dari browser)
+  $name       = $slug . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(3)) . '.' . $ok[$mime];
+  $destFs     = $uploadRoot . '/' . $name;
+  $destUrl    = asset_url('uploads/covers/' . $name);  // URL publik
 
   if (!move_uploaded_file($tmp, $destFs)) throw new Exception('Gagal menyimpan cover.');
   return $destUrl;
@@ -62,24 +59,20 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $release_year = (int)($_POST['release_year'] ?? 0);
     $description  = str_trim($_POST['description'] ?? '');
 
+    // ✅ Upload dulu (kalau ada). Kalau gagal akan throw dan ketangkap di catch.
+    $url = handle_cover_upload($title);  // bisa NULL jika user tidak memilih file
+
     db_exec($mysqli,
-      "INSERT INTO games(title,genre,platform,release_year,image_url,description)
+      "INSERT INTO games(title, genre, platform, release_year, image_url, description)
        VALUES(?,?,?,?,?,?)",
-      [$title,$genre,$platform,$release_year,'',$description],
+      [$title, $genre, $platform, $release_year, $url ?: '', $description],
       'sssiss'
     );
-    $newId = mysqli_insert_id($mysqli);
-
-    try {
-      if ($url = handle_cover_upload($title)) {
-        db_exec($mysqli, "UPDATE games SET image_url=? WHERE id=?", [$url,$newId], 'si');
-      }
-    } catch (Exception $eUp) { flash('err', $eUp->getMessage()); }
 
     flash('ok','Game dibuat.');
     redirect('games.php');
   } catch (Exception $e) {
-    flash('err',$e->getMessage());
+    flash('err', $e->getMessage());
     redirect('games.php');
   }
 }
@@ -93,27 +86,36 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $release_year = (int)($_POST['release_year'] ?? 0);
     $description  = str_trim($_POST['description'] ?? '');
 
-    db_exec($mysqli,
-      "UPDATE games SET title=?,genre=?,platform=?,release_year=?,description=? WHERE id=?",
-      [$title,$genre,$platform,$release_year,$description,$id],
-      'sssisi'
-    );
+    // ✅ Coba upload. Kalau tidak ada file baru: $url === NULL → image tidak diubah.
+    $url = handle_cover_upload($title);
 
-    try {
-      if ($url = handle_cover_upload($title)) {
-        db_exec($mysqli, "UPDATE games SET image_url=? WHERE id=?", [$url,$id], 'si');
-      }
-    } catch (Exception $eUp) { flash('err', $eUp->getMessage()); }
+    if ($url !== null) {
+      db_exec($mysqli,
+        "UPDATE games
+         SET title=?, genre=?, platform=?, release_year=?, description=?, image_url=?
+         WHERE id=?",
+        [$title, $genre, $platform, $release_year, $description, $url, $id],
+        'sssissi'
+      );
+    } else {
+      db_exec($mysqli,
+        "UPDATE games
+         SET title=?, genre=?, platform=?, release_year=?, description=?
+         WHERE id=?",
+        [$title, $genre, $platform, $release_year, $description, $id],
+        'sssisi'
+      );
+    }
 
     flash('ok','Game diperbarui.');
     redirect('games.php');
   } catch (Exception $e) {
-    flash('err',$e->getMessage());
+    flash('err', $e->getMessage());
     redirect('games.php');
   }
 }
 
-if ($action === 'delete') {
+if ($action === 'delete' && isset($_GET['id'])) {
   $id = (int)($_GET['id'] ?? 0);
   db_exec($mysqli, "DELETE FROM games WHERE id=?", [$id], 'i');
   flash('ok','Game dihapus.');
@@ -124,32 +126,31 @@ if ($action === 'delete') {
 require_once __DIR__ . '/_header.php';
 ?>
 <style>
-.dz{position:relative;border:1px dashed rgba(167,139,250,.55);
-background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
-border-radius:16px;padding:18px;text-align:center;cursor:pointer;transition:.15s}
-.dz:hover{border-color:var(--primary);box-shadow:0 10px 30px var(--ring)}
-.dz.dragover{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(167,139,250,.25) inset}
-.dz .thumb{display:none;margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-.dz .thumb img{display:block;width:100%;height:auto}
-.dz .err{margin-top:10px;color:#f87171;font-weight:700;display:none}
-.hidden-file{display:none}
-
-.tbl{width:100%;border-collapse:separate;border-spacing:0 10px}
-.tbl thead th{padding:10px 14px;text-align:left;opacity:.8}
-.tbl tbody tr{transition:.15s transform}
-.tbl tbody tr:hover{transform:translateY(-2px)}
-.tbl tbody td{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);padding:12px 14px}
-.tbl tbody td:first-child{border-radius:12px 0 0 12px}
-.tbl tbody td:last-child{border-radius:0 12px 12px 0}
-.actions{display:flex;gap:10px;align-items:center;justify-content:flex-end}
-.chip-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
-background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));text-decoration:none;color:#eee;font-weight:700;font-size:.95rem}
-.chip-btn:hover{transform:translateY(-1px);border-color:var(--primary);box-shadow:0 8px 22px var(--ring)}
-.chip-edit{border-color:rgba(167,139,250,.45);background:rgba(167,139,250,.15)}
-.chip-edit:hover{box-shadow:0 8px 24px rgba(167,139,250,.35)}
-.chip-del{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.12)}
-.chip-del:hover{box-shadow:0 8px 24px rgba(239,68,68,.35)}
-.tbl td.act{white-space:nowrap}
+  .dz{position:relative;border:1px dashed rgba(167,139,250,.55);
+      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+      border-radius:16px;padding:18px;text-align:center;cursor:pointer;transition:.15s}
+  .dz:hover{border-color:var(--primary);box-shadow:0 10px 30px var(--ring)}
+  .dz.dragover{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(167,139,250,.25) inset}
+  .dz .thumb{display:none;margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+  .dz .thumb img{display:block;width:100%;height:auto}
+  .dz .err{margin-top:10px;color:#f87171;font-weight:700;display:none}
+  .hidden-file{display:none}
+  .tbl{width:100%;border-collapse:separate;border-spacing:0 10px}
+  .tbl thead th{padding:10px 14px;text-align:left;opacity:.8}
+  .tbl tbody tr{transition:.15s transform}
+  .tbl tbody tr:hover{transform:translateY(-2px)}
+  .tbl tbody td{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);padding:12px 14px}
+  .tbl tbody td:first-child{border-radius:12px 0 0 12px}
+  .tbl tbody td:last-child{border-radius:0 12px 12px 0}
+  .actions{display:flex;gap:10px;align-items:center;justify-content:flex-end}
+  .chip-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
+           background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));text-decoration:none;color:#eee;font-weight:700;font-size:.95rem}
+  .chip-btn:hover{transform:translateY(-1px);border-color:var(--primary);box-shadow:0 8px 22px var(--ring)}
+  .chip-edit{border-color:rgba(167,139,250,.45);background:rgba(167,139,250,.15)}
+  .chip-edit:hover{box-shadow:0 8px 24px rgba(167,139,250,.35)}
+  .chip-del{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.12)}
+  .chip-del:hover{box-shadow:0 8px 24px rgba(239,68,68,.35)}
+  .tbl td.act{white-space:nowrap}
 </style>
 
 <div class="card">
@@ -163,10 +164,11 @@ if ($action === 'edit') {
   $id = (int)($_GET['id'] ?? 0);
   $g = db_one($mysqli, "SELECT * FROM games WHERE id=?", [$id], 'i');
   if (!$g) { echo '<div class="card">Data tidak ditemukan</div>'; require __DIR__ . '/_footer.php'; exit; }
-?>
+  ?>
   <div class="card">
     <h2>Edit</h2>
-    <form method="post" class="grid" enctype="multipart/form-data">
+    <!-- ✅ form submit ke file yang sama TANPA query; aksi ditentukan oleh input hidden -->
+    <form method="post" action="games.php" class="grid" enctype="multipart/form-data">
       <?php csrf_field(); ?>
       <input type="hidden" name="id" value="<?= (int)$g['id'] ?>"/>
       <input type="hidden" name="action" value="update">
@@ -196,8 +198,11 @@ if ($action === 'edit') {
 <?php } else { ?>
   <div class="card">
     <h2>Tambah</h2>
-    <form method="post" action="games.php?action=create" class="grid" enctype="multipart/form-data">
+    <!-- ✅ hapus query; pakai hidden action=create -->
+    <form method="post" action="games.php" class="grid" enctype="multipart/form-data">
       <?php csrf_field(); ?>
+      <input type="hidden" name="action" value="create">
+
       <label>Judul <input class="input" name="title"></label>
       <label>Genre <input class="input" name="genre"></label>
       <label>Platform <input class="input" name="platform"></label>

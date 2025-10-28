@@ -39,8 +39,12 @@ if ($genre !== '') {
   $types .= 's';
 }
 
-$sql = "SELECT id,title,platform,genre,release_year,image_url,LEFT(description,150) excerpt
+$sql = "SELECT id,title,platform,genre,release_year,image_url,
+               IFNULL(cover_focus_x,50) AS cover_focus_x,
+               IFNULL(cover_focus_y,50) AS cover_focus_y,
+               LEFT(description,150) excerpt
         FROM games";
+
 if ($where)
   $sql .= " WHERE " . implode(" AND ", $where);
 $sql .= " ORDER BY title ASC";
@@ -465,7 +469,15 @@ select, select.input {
         ?>
         <article class="card-game">
           <?php if (!empty($gm['image_url'])): ?>
-            <img class="thumb" src="<?= e($gm['image_url']) ?>" alt="">
+  <?php $fx=(int)($gm['cover_focus_x'] ?? 50); $fy=(int)($gm['cover_focus_y'] ?? 50); ?>
+  <img
+    class="thumb cover-adjustable"
+    data-table="games"
+    data-id="<?= (int)$gm['id'] ?>"
+    src="<?= e($gm['image_url']) ?>"
+    alt="<?= e($gm['title']) ?>"
+    style="object-position:<?= $fx ?>% <?= $fy ?>%">
+
           <?php else: ?>
             <div class="thumb-fallback"><?= e(mb_strtoupper(mb_substr($gm['title'], 0, 1))) ?></div>
           <?php endif; ?>

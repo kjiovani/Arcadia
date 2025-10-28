@@ -1,353 +1,396 @@
 <?php
-// public/admin/profile.php — Owner/Admin Profile (tahan skema)
+// ===== BOOT =====
 require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/helpers.php';
-require_once __DIR__ . '/../../lib/csrf.php';
 require_once __DIR__ . '/../../lib/auth.php';
-require_once __DIR__ . '/../../lib/validation.php'; // <-- penting: biar str_trim tersedia
 require_admin();
-if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!function_exists('e')) {
-  function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+if (session_status() === PHP_SESSION_NONE) {
+  session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
+  session_start();
+}
+require_once __DIR__ . '/../../lib/db.php';
+require_once __DIR__ . '/../../lib/csrf.php';
+require_once __DIR__ . '/../../lib/validation.php';
+
+/* ---------- helper asset + upload (fallback aman) ---------- */
+if (!defined('UPLOADS_PATH')) {
+  define('UPLOADS_PATH', realpath(__DIR__ . '/../../public') . '/uploads');
+}
+if (!function_exists('asset_url')) {
+  function asset_url(string $p = '') { return '/arcadia/public/' . ltrim($p, '/'); }
+}
+function upload_image(array $file, string $subdir, string $seed, int $maxMB = 3): ?string {
+  if (empty($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return null;
+  if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) throw new Exception('Upload gagal (code ' . ($file['error'] ?? -1) . ').');
+
+  $tmp  = $file['tmp_name'] ?? '';
+  $size = (int)($file['size'] ?? 0);
+  if (!$tmp || $size <= 0) return null;
+  if ($size > $maxMB * 1024 * 1024) throw new Exception("Ukuran gambar > {$maxMB}MB.");
+
+  $fi   = new finfo(FILEINFO_MIME_TYPE);
+  $mime = $fi->file($tmp);
+  $map  = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'];
+  if (!isset($map[$mime])) throw new Exception('Format harus JPG/PNG/WEBP.');
+
+  $dir = rtrim(UPLOADS_PATH, '/')."/{$subdir}";
+  if (!is_dir($dir)) @mkdir($dir, 0775, true);
+
+  $slug = strtolower(trim(preg_replace('~[^a-z0-9]+~i','-',$seed ?: 'img'),'-'));
+  $name = $slug.'-'.date('YmdHis').'-'.bin2hex(random_bytes(3)).'.'.$map[$mime];
+  if (!move_uploaded_file($tmp, $dir.'/'.$name)) throw new Exception('Gagal menyimpan file.');
+  return asset_url("uploads/{$subdir}/{$name}");
 }
 
-$uid = (int)($_SESSION['user']['id'] ?? ($_SESSION['user_id'] ?? 0));
-if ($uid <= 0) redirect('/arcadia/public/login.php');
-
-// ---------- helper cek kolom ----------
-function users_has_col(mysqli $mysqli, string $col): bool {
-  $row = db_one(
-    $mysqli,
-    "SELECT COUNT(*) AS n
-       FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'users'
-        AND COLUMN_NAME = ?",
-    [$col],
-    's'
-  );
-  return (int)($row['n'] ?? 0) > 0;
+/* ---------- cek kolom ada/tidak ---------- */
+function users_has_col(string $col): bool {
+  global $mysqli;
+  if (!$mysqli || !@$mysqli->ping()) return false;
+  $col = mysqli_real_escape_string($mysqli, $col);
+  $res = $mysqli->query("SHOW COLUMNS FROM `users` LIKE '{$col}'");
+  if (!$res) return false;
+  $row = $res->fetch_assoc();
+  $res->free();
+  return (bool)$row;
+}
+function table_has_col(string $table, string $col): bool {
+  global $mysqli;
+  $table = mysqli_real_escape_string($mysqli,$table);
+  $col   = mysqli_real_escape_string($mysqli,$col);
+  $res = $mysqli->query("SHOW COLUMNS FROM `{$table}` LIKE '{$col}'");
+  return $res && $res->fetch_assoc();
 }
 
-$hasAvatar    = users_has_col($mysqli, 'avatar_url');
-$hasBanner    = users_has_col($mysqli, 'banner_url');
-$hasBio       = users_has_col($mysqli, 'bio');
-$hasCreated   = users_has_col($mysqli, 'created_at');
-$hasLastLogin = users_has_col($mysqli, 'last_login_at');
-
-// rakit SELECT aman berdasar kolom yang ada
-$cols = ['id','name','email','role'];
-if ($hasAvatar)    $cols[] = 'avatar_url';
-if ($hasBanner)    $cols[] = 'banner_url';
-if ($hasBio)       $cols[] = 'bio';
-if ($hasCreated)   $cols[] = 'created_at';
-if ($hasLastLogin) $cols[] = 'last_login_at';
-$colList = implode(',', $cols);
-
-function fetch_me(mysqli $mysqli, int $uid, string $colList) {
-  return db_one($mysqli, "SELECT $colList FROM users WHERE id=?", [$uid], 'i');
+// flags
+$HAS_BIO = $HAS_AVATAR = $HAS_BANNER = $HAS_PWHASH = false;
+if ($mysqli && @$mysqli->ping()) {
+  $HAS_BIO    = users_has_col('bio');
+  $HAS_AVATAR = users_has_col('avatar_url');
+  $HAS_BANNER = users_has_col('banner_url');
+  $HAS_PWHASH = users_has_col('password_hash');
 }
 
-$me  = fetch_me($mysqli, $uid, $colList) ?: [];
-$ok = null; $err = null;
+/* ---------- user login ---------- */
+$me = function_exists('current_user') ? current_user() : ($_SESSION['user'] ?? null);
+$user_id = (int)($me['id'] ?? 0);
+if ($user_id <= 0) { header('Location: /arcadia/public/auth/login.php'); exit; }
 
-// direktori upload
-$AVATAR_DIR = __DIR__ . '/../../public/uploads/avatars/';
-$BANNER_DIR = __DIR__ . '/../../public/uploads/banners/';
-$AVATAR_URL = '/arcadia/public/uploads/avatars/';
-$BANNER_URL = '/arcadia/public/uploads/banners/';
-@is_dir($AVATAR_DIR) || @mkdir($AVATAR_DIR, 0775, true);
-@is_dir($BANNER_DIR) || @mkdir($BANNER_DIR, 0775, true);
+/* ---------- SELECT dinamis ---------- */
+$select = ['id','name','email','role'];
+if ($HAS_AVATAR) $select[] = 'avatar_url';
+if ($HAS_BANNER) $select[] = 'banner_url';
+if ($HAS_BIO)    $select[] = 'bio';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$u = db_one($mysqli, "SELECT ".implode(',', $select)." FROM users WHERE id=?", [$user_id], 'i');
+if (!$u) {
+  $u = ['id'=>$user_id,'name'=>'','email'=>'','role'=>'OWNER'];
+  if ($HAS_AVATAR) $u['avatar_url']='';
+  if ($HAS_BANNER) $u['banner_url']='';
+  if ($HAS_BIO)    $u['bio']='';
+}
+
+/* ---------- ACTION ---------- */
+$action = $_POST['action'] ?? ($_GET['action'] ?? 'view');
+if ($_SERVER['REQUEST_METHOD'] === 'POST') csrf_verify();
+
+if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
-    csrf_verify();
-    $action = (string)($_POST['action'] ?? '');
-    $allow = ['image/png'=>'png','image/jpeg'=>'jpg','image/webp'=>'webp'];
-    $finf  = new finfo(FILEINFO_MIME_TYPE);
+    $name   = required(str_trim($_POST['name'] ?? ''), 'Nama');
+    $fields = ['name=?'];
+    $bind   = [$name];
 
-    if ($action === 'upload_avatar') {
-      if (!$hasAvatar) throw new Exception('Fitur avatar belum tersedia (kolom avatar_url tidak ada).');
-      if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) throw new Exception('Gagal mengunggah avatar.');
-      if ($_FILES['avatar']['size'] > 2*1024*1024) throw new Exception('Ukuran avatar maks 2 MB.');
-      $mime = $finf->file($_FILES['avatar']['tmp_name']);
-      if (!isset($allow[$mime])) throw new Exception('Format avatar harus PNG/JPG/WEBP.');
-      if (!empty($me['avatar_url'])) @unlink($AVATAR_DIR . basename($me['avatar_url']));
-      $fname = 'u'.$uid.'-'.date('YmdHis').'-'.bin2hex(random_bytes(3)).'.'.$allow[$mime];
-      if (!move_uploaded_file($_FILES['avatar']['tmp_name'], $AVATAR_DIR.$fname)) throw new Exception('Tidak bisa menyimpan avatar.');
-      $url = $AVATAR_URL.$fname;
-      db_exec($mysqli, "UPDATE users SET avatar_url=? WHERE id=?", [$url,$uid], 'si');
-      $_SESSION['user']['avatar_url'] = $url;
-      $ok='Avatar berhasil diperbarui.';
-    }
+    if ($HAS_BIO) { $bio = str_trim($_POST['bio'] ?? ''); $fields[]='bio=?'; $bind[]=$bio; }
 
-    if ($action === 'remove_avatar') {
-      if (!$hasAvatar) throw new Exception('Fitur avatar belum tersedia.');
-      if (!empty($me['avatar_url'])) @unlink($AVATAR_DIR . basename($me['avatar_url']));
-      db_exec($mysqli, "UPDATE users SET avatar_url=NULL WHERE id=?", [$uid], 'i');
-      unset($_SESSION['user']['avatar_url']);
-      $ok='Avatar dihapus.';
-    }
+    // hapus avatar/banner jika diminta
+    if ($HAS_AVATAR && !empty($_POST['del_avatar'])) { $fields[]='avatar_url=?'; $bind[]=''; }
+    if ($HAS_BANNER && !empty($_POST['del_banner'])) { $fields[]='banner_url=?'; $bind[]=''; }
 
-    if ($action === 'upload_banner') {
-      if (!$hasBanner) throw new Exception('Fitur banner belum tersedia (kolom banner_url tidak ada).');
-      if (!isset($_FILES['banner']) || $_FILES['banner']['error'] !== UPLOAD_ERR_OK) throw new Exception('Gagal mengunggah banner.');
-      if ($_FILES['banner']['size'] > 3*1024*1024) throw new Exception('Ukuran banner maks 3 MB.');
-      $mime = $finf->file($_FILES['banner']['tmp_name']);
-      if (!isset($allow[$mime])) throw new Exception('Format banner harus PNG/JPG/WEBP.');
-      if (!empty($me['banner_url'])) @unlink($BANNER_DIR . basename($me['banner_url']));
-      $fname = 'b'.$uid.'-'.date('YmdHis').'-'.bin2hex(random_bytes(3)).'.'.$allow[$mime];
-      if (!move_uploaded_file($_FILES['banner']['tmp_name'], $BANNER_DIR.$fname)) throw new Exception('Tidak bisa menyimpan banner.');
-      $url = $BANNER_URL.$fname;
-      db_exec($mysqli, "UPDATE users SET banner_url=? WHERE id=?", [$url,$uid], 'si');
-      $ok='Banner berhasil diperbarui.';
-    }
-
-    if ($action === 'remove_banner') {
-      if (!$hasBanner) throw new Exception('Fitur banner belum tersedia.');
-      if (!empty($me['banner_url'])) @unlink($BANNER_DIR . basename($me['banner_url']));
-      db_exec($mysqli, "UPDATE users SET banner_url=NULL WHERE id=?", [$uid], 'i');
-      $ok='Banner dihapus.';
-    }
-
-    if ($action === 'save_profile') {
-      // str_trim tersedia dari validation.php; bisa diganti trim() bila mau
-      $name = str_trim($_POST['name'] ?? '');
-      $pass = (string)($_POST['password'] ?? '');
-      $bio  = $hasBio ? str_trim($_POST['bio'] ?? '') : null;
-
-      if ($name === '') throw new Exception('Nama tidak boleh kosong.');
-      if ($hasBio) {
-        db_exec($mysqli, "UPDATE users SET name=?, bio=? WHERE id=?", [$name,$bio,$uid], 'ssi');
-      } else {
-        db_exec($mysqli, "UPDATE users SET name=? WHERE id=?", [$name,$uid], 'si');
+    if ($HAS_PWHASH) {
+      $newpass = str_trim($_POST['new_password'] ?? '');
+      $repass  = str_trim($_POST['re_password'] ?? '');
+      if ($newpass !== '') {
+        if (strlen($newpass) < 6) throw new Exception('Password minimal 6 karakter.');
+        if ($newpass !== $repass) throw new Exception('Konfirmasi password tidak cocok.');
+        $fields[]='password_hash=?';
+        $bind[] = password_hash($newpass, PASSWORD_DEFAULT);
       }
-      $_SESSION['user']['name'] = $name;
-
-      if ($pass !== '') {
-        if (mb_strlen($pass) < 8) throw new Exception('Password minimal 8 karakter.');
-        $hash = password_hash($pass, PASSWORD_DEFAULT);
-        db_exec($mysqli, "UPDATE users SET password_hash=? WHERE id=?", [$hash,$uid], 'si');
-      }
-      $ok='Profil berhasil diperbarui.';
     }
 
-    // refresh data
-    $me = fetch_me($mysqli, $uid, $colList);
+    // upload baru (menimpa jika ada file)
+    if ($HAS_AVATAR) { if ($url = upload_image($_FILES['avatar'] ?? [], 'avatars', $name, 2)) { $fields[]='avatar_url=?'; $bind[]=$url; } }
+    if ($HAS_BANNER) { if ($url = upload_image($_FILES['banner'] ?? [], 'banners', $name, 4)) { $fields[]='banner_url=?'; $bind[]=$url; } }
+
+    $bind[] = $user_id;
+    $types  = str_repeat('s', count($bind)-1) . 'i';
+
+    db_exec($mysqli, "UPDATE users SET ".implode(',', $fields)." WHERE id=?", $bind, $types);
+    flash('ok','Profil diperbarui.');
+    redirect('profile.php');
   } catch (Exception $e) {
-    $err = $e->getMessage();
+    flash('err',$e->getMessage());
+    redirect('profile.php?action=edit');
   }
 }
 
-$mode = ($_GET['mode'] ?? '') === 'edit' ? 'edit' : 'view';
+/* ---------- STATS & INSIGHTS ---------- */
+$stat_games    = (int)(db_one($mysqli, "SELECT COUNT(*) c FROM games")['c'] ?? 0);
+$stat_walks    = (int)(db_one($mysqli, "SELECT COUNT(*) c FROM walkthroughs")['c'] ?? 0);
+$stat_chapters = (int)(db_one($mysqli, "SELECT COUNT(*) c FROM chapters")['c'] ?? 0);
 
+function dir_size_mb($path){
+  if (!is_dir($path)) return 0;
+  $size=0; $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS));
+  foreach($it as $f){ if($f->isFile()) $size += $f->getSize(); }
+  return round($size/1024/1024,2);
+}
+$uploads_root = defined('UPLOADS_PATH') ? UPLOADS_PATH : (realpath(__DIR__.'/../../public').'/uploads');
+$uploads_used_mb = dir_size_mb($uploads_root);
+
+function ini_bytes($v){ $v=trim((string)$v); if($v==='')return 0; $u=strtolower(substr($v,-1)); $n=(float)$v; if($u==='g')$n*=1024; if($u==='m')$n*=1024; return (int)$n*1024; }
+$upload_limit_mb = round(ini_bytes(ini_get('upload_max_filesize'))/1024/1024);
+$post_limit_mb   = round(ini_bytes(ini_get('post_max_size'))/1024/1024);
+
+$ip_addr   = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+$agent     = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 160);
+$loginTime = date('d M Y, H:i');
+
+/* ---------- VIEW ---------- */
 include __DIR__ . '/_header.php';
 ?>
 <style>
-  :root{--line:rgba(255,255,255,.10);--soft:rgba(255,255,255,.06)}
-  .page-title{font-size:1.35rem;font-weight:900;margin:0 0 10px}
-  .profile-layout{display:grid;gap:18px;grid-template-columns:1fr <?php echo $mode==='edit'?'420px':'1fr'; ?>}
-  <?php if($mode!=='edit'):?>.profile-layout{grid-template-columns:1fr}<?php endif;?>
-  .profile-card{border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));padding:18px}
-  .profile-inner{border-radius:18px;background:rgba(0,0,0,.18);padding:14px 14px 18px}
-  .banner{width:100%;aspect-ratio:6/2;border-radius:14px;overflow:hidden;background:var(--soft)}
-  .banner img{width:100%;height:100%;object-fit:cover}
-  .ava-out{
-    width:132px;height:132px;border-radius:28px;margin:-36px auto 8px;
-    border:3px solid rgba(0,0,0,.35);overflow:hidden;
-    background:rgba(255,255,255,.12);display:grid;place-items:center;
-    font-weight:900;font-size:2rem;box-shadow:0 10px 24px rgba(0,0,0,.35)
-  }
-  .ava-out img{width:100%;height:100%;object-fit:cover}
-  .profile-body{padding:8px 8px 8px;text-align:center}
-  .name{font-size:1.4rem;font-weight:900}
-  .muted{opacity:.9}
-  .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
-  .chip{padding:.35rem .7rem;border-radius:999px;border:1px solid var(--line);background:var(--soft);font-size:.9rem}
-  .btn-primary{display:inline-block;padding:.85rem 1rem;border-radius:12px;border:1px solid var(--primary);background:var(--primary);color:#0f0f16;box-shadow:0 10px 22px var(--ring);cursor:pointer}
-  .btn-ghost{padding:.75rem 1rem;border-radius:12px;border:1px solid var(--line);background:transparent;color:inherit}
-  .btn-ghost:hover{background:var(--soft)}
-  .edit-panel{border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));padding:16px;justify-self:end;width:100%;max-width:420px}
-  .panel-title{margin:0 0 .8rem;font-weight:900}
-  .section{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
-  .row{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-  .alert{margin:.4rem 0;padding:.6rem .8rem;border-radius:12px;border:1px solid var(--line)}
-  .ok{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.35)}
-  .err{background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.35)}
-  .drop{display:flex;gap:12px;align-items:center;border:1px dashed var(--line);border-radius:14px;padding:10px;cursor:pointer;background:rgba(255,255,255,.03)}
-  .drop.is-drag{background:rgba(167,139,250,.08);border-color:var(--primary)}
-  .drop-preview{width:84px;height:60px;border-radius:10px;overflow:hidden;background:var(--soft);display:grid;place-items:center}
-  .drop-preview img{width:100%;height:100%;object-fit:cover}
-  .hint{opacity:.85;font-size:.9rem}
-  @media(max-width:1000px){.profile-layout{grid-template-columns:1fr}.edit-panel{justify-self:stretch;max-width:none}}
+/* ===== Shared ===== */
+.section{margin-top:18px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.08);padding:18px}
+
+/* ===== Hero ===== */
+.pro-hero{padding:0;overflow:hidden;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08)}
+.pro-banner{position:relative;height:260px}
+.pro-banner img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(105%) contrast(102%)}
+.pro-banner::after{content:"";position:absolute;inset:auto 0 0 0;height:64%;background:linear-gradient(180deg,transparent 0%,rgba(10,8,20,.72) 48%,rgba(10,8,20,.92) 100%)}
+.pro-head{position:relative;padding:0 22px 20px}
+.pro-avatar{position:absolute;left:28px;top:-62px;width:122px;height:122px;border-radius:26px;overflow:hidden;border:2px solid rgba(255,255,255,.55);box-shadow:0 16px 36px rgba(0,0,0,.38);background:#0f0f16}
+.pro-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.pro-meta{padding-left:170px;padding-top:14px}
+.pro-name{font-size:1.6rem;font-weight:900;margin:.25rem 0 0;letter-spacing:.2px}
+.badge-role{display:inline-block;margin-top:.45rem;padding:.28rem .7rem;border-radius:999px;font-weight:900;font-size:.85rem;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.12)}
+
+/* ===== Edit layout ===== */
+.edit-wrap{display:grid;gap:18px}
+@media(min-width:980px){.edit-wrap{grid-template-columns:1.15fr .85fr}}
+.form-card{border-radius:18px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));padding:18px}
+.field{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
+.help{font-size:.85rem;opacity:.75;margin-top:-4px}
+
+/* ===== Uploader (aesthetic) ===== */
+.media-grid{display:grid;gap:16px}
+.tile{
+  border-radius:16px; overflow:hidden; position:relative;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+  border:1px solid transparent;
+  background-clip: padding-box, border-box;
+  box-shadow:0 8px 28px rgba(0,0,0,.22);
+}
+.tile::before{
+  content:""; position:absolute; inset:0; z-index:0; border-radius:16px;
+  padding:1px; -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  background:linear-gradient(135deg,rgba(167,139,250,.55),rgba(99,102,241,.35),rgba(236,72,153,.35));
+}
+.tile-head{position:relative; z-index:1}
+.tile-head .badge{
+  position:absolute; left:10px; top:10px; padding:.22rem .55rem; font-size:.75rem; font-weight:800;
+  border-radius:999px; border:1px solid rgba(255,255,255,.22); background:rgba(0,0,0,.55)
+}
+.tile-head .frame{display:block; width:100%; height:100%; object-fit:cover}
+.tile-head.square{width:180px; height:180px; margin:14px auto 0; border-radius:14px; overflow:hidden}
+.tile-head.banner{aspect-ratio:16/5; border-radius:12px; overflow:hidden; margin:14px}
+
+.tile-body{position:relative; z-index:1; padding:12px 14px 14px}
+.u-drop{
+  display:grid; place-items:center; text-align:center;
+  border:1px dashed rgba(167,139,250,.55); border-radius:12px; padding:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+  transition:.15s border-color ease,.15s box-shadow ease
+}
+.u-drop:hover{border-color:#a78bfa; box-shadow:0 0 0 3px rgba(167,139,250,.18) inset}
+.u-drop.drag{border-color:#a78bfa; box-shadow:0 0 0 3px rgba(167,139,250,.28) inset}
+.u-ico{font-size:26px; line-height:1}
+.u-title{font-weight:900; margin-top:6px}
+.u-sub{opacity:.7; font-size:.9rem}
+.u-prev{display:none; margin-top:10px; border:1px solid rgba(255,255,255,.1); border-radius:10px; overflow:hidden}
+.u-prev img{display:block; max-width:100%}
+
+.u-actions{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px}
+.switch{display:inline-flex; align-items:center; gap:8px; font-weight:700; opacity:.9}
+.switch input{accent-color:#a78bfa; width:18px; height:18px}
+.note{font-size:.85rem; opacity:.75}
 </style>
 
-<div class="page-title">Profil</div>
-
-<div class="profile-layout">
-  <!-- Kartu profil -->
-  <section class="profile-card">
-    <div class="profile-inner">
-      <div class="banner">
-        <?php if ($hasBanner && !empty($me['banner_url'])): ?>
-          <img src="<?= e($me['banner_url']) ?>" alt="banner">
-        <?php endif; ?>
-      </div>
-
-      <!-- AVATAR DI LUAR BANNER -->
-      <div class="ava-out">
-        <?php if ($hasAvatar && !empty($me['avatar_url'])): ?>
-          <img src="<?= e($me['avatar_url']) ?>" alt="avatar">
-        <?php else: ?>
-          <?= e(mb_strtoupper(mb_substr($me['name'] ?? 'A',0,1))) ?>
-        <?php endif; ?>
-      </div>
-
-      <div class="profile-body">
-        <div class="name"><?= e($me['name'] ?? 'Owner') ?></div>
-        <div class="muted"><?= e($me['email'] ?? '') ?></div>
-        <?php if ($hasBio && !empty($me['bio'])): ?>
-          <div style="margin-top:8px"><?= nl2br(e($me['bio'])) ?></div>
-        <?php endif; ?>
-        <div class="chips">
-          <span class="chip">Role: <?= e(strtoupper($me['role'] ?? 'OWNER')) ?></span>
-          <?php if ($hasCreated && !empty($me['created_at'])): ?><span class="chip">Dibuat: <?= e($me['created_at']) ?></span><?php endif; ?>
-          <?php if ($hasLastLogin && !empty($me['last_login_at'])): ?><span class="chip">Login terakhir: <?= e($me['last_login_at']) ?></span><?php endif; ?>
-        </div>
-
-        <?php if ($mode !== 'edit'): ?>
-          <div style="margin-top:16px">
-            <a class="btn-primary" href="/arcadia/public/admin/profile.php?mode=edit">Edit Profil</a>
-          </div>
-        <?php endif; ?>
-      </div>
-    </div>
-  </section>
-
-  <?php if ($mode === 'edit'): ?>
-  <!-- Panel edit kanan -->
-  <aside class="edit-panel">
-    <div class="panel-title">Edit Profil</div>
-    <?php if ($ok): ?><div class="alert ok"><?= e($ok) ?></div><?php endif; ?>
-    <?php if ($err): ?><div class="alert err"><?= e($err) ?></div><?php endif; ?>
-
-    <?php if ($hasAvatar): ?>
-    <div class="section">
-      <h4 style="margin:0 0 .6rem">Avatar</h4>
-      <!-- Form Upload Avatar -->
-      <form method="post" enctype="multipart/form-data" id="frmAvatar">
-        <?php csrf_field(); ?>
-        <input type="hidden" name="action" value="upload_avatar">
-        <label class="drop" id="dropAvatar">
-          <div class="drop-preview" id="pvAvatar">
-            <?php if (!empty($me['avatar_url'])): ?><img src="<?= e($me['avatar_url']) ?>" alt="">
-            <?php else: ?><span>A</span><?php endif; ?>
-          </div>
-          <div>
-            <div><strong>Tarik & jatuhkan</strong> gambar ke sini atau klik untuk pilih</div>
-            <div class="hint">PNG/JPG/WEBP • maks 2 MB</div>
-            <input type="file" name="avatar" id="inpAvatar" accept="image/png,image/jpeg,image/webp" hidden required>
-          </div>
-        </label>
-        <button class="btn-primary" style="margin-top:10px">Upload</button>
-      </form>
-
-      <!-- Form Hapus Avatar (terpisah, tidak nested) -->
-      <?php if (!empty($me['avatar_url'])): ?>
-      <form method="post" style="margin-top:8px">
-        <?php csrf_field(); ?>
-        <input type="hidden" name="action" value="remove_avatar">
-        <button class="btn-ghost">Hapus Avatar</button>
-      </form>
-      <?php endif; ?>
-    </div>
-    <?php endif; ?>
-
-    <?php if ($hasBanner): ?>
-    <div class="section">
-      <h4 style="margin:0 0 .6rem">Banner</h4>
-      <!-- Form Upload Banner -->
-      <form method="post" enctype="multipart/form-data" id="frmBanner">
-        <?php csrf_field(); ?>
-        <input type="hidden" name="action" value="upload_banner">
-        <label class="drop" id="dropBanner">
-          <div class="drop-preview" id="pvBanner" style="width:140px;height:84px">
-            <?php if (!empty($me['banner_url'])): ?><img src="<?= e($me['banner_url']) ?>" alt=""><?php endif; ?>
-          </div>
-          <div>
-            <div><strong>Tarik & jatuhkan</strong> gambar banner ke sini atau klik untuk pilih</div>
-            <div class="hint">PNG/JPG/WEBP • maks 3 MB</div>
-            <input type="file" name="banner" id="inpBanner" accept="image/png,image/jpeg,image/webp" hidden required>
-          </div>
-        </label>
-        <button class="btn-primary" style="margin-top:10px">Upload</button>
-      </form>
-
-      <!-- Form Hapus Banner (terpisah) -->
-      <?php if (!empty($me['banner_url'])): ?>
-      <form method="post" style="margin-top:8px">
-        <?php csrf_field(); ?>
-        <input type="hidden" name="action" value="remove_banner">
-        <button class="btn-ghost">Hapus Banner</button>
-      </form>
-      <?php endif; ?>
-    </div>
-    <?php endif; ?>
-
-    <div class="section">
-      <h4 style="margin:0 0 .6rem">Data Profil</h4>
-      <form method="post">
-        <?php csrf_field(); ?>
-        <input type="hidden" name="action" value="save_profile">
-        <div class="row">
-          <label for="name"><strong>Nama</strong></label>
-          <input class="input" id="name" name="name" value="<?= e($me['name'] ?? '') ?>" required>
-        </div>
-        <?php if ($hasBio): ?>
-        <div class="row">
-          <label for="bio"><strong>Bio</strong></label>
-          <textarea class="input" id="bio" name="bio" rows="3" placeholder="Tulis bio singkat..."><?= e($me['bio'] ?? '') ?></textarea>
-        </div>
-        <?php endif; ?>
-        <div class="row">
-          <label for="password"><strong>Password baru (opsional)</strong></label>
-          <input class="input" id="password" name="password" type="password" placeholder="Kosongkan jika tidak ingin mengubah">
-          <div class="hint">Minimal 8 karakter, gunakan kombinasi huruf & angka.</div>
-        </div>
-        <div style="display:flex;gap:10px">
-          <button class="btn-primary">Simpan</button>
-          <a class="btn-ghost" href="/arcadia/public/admin/profile.php">Batal</a>
-        </div>
-      </form>
-    </div>
-  </aside>
-  <?php endif; ?>
+<div class="card">
+  <h1>Profil</h1>
+  <?php if ($m = flash('ok')): ?><div class="alert"><?= e($m) ?></div><?php endif; ?>
+  <?php if ($m = flash('err')): ?><div class="alert"><?= e($m) ?></div><?php endif; ?>
 </div>
 
+<?php
+$avatarSrc = ($HAS_AVATAR && !empty($u['avatar_url'])) ? $u['avatar_url'] : asset_url('assets/avatar-default.webp');
+$bannerSrc = ($HAS_BANNER && !empty($u['banner_url'])) ? $u['banner_url'] : '';
+$bioText   = ($HAS_BIO   && !empty($u['bio'])) ? $u['bio'] : '';
+$modeEdit  = (($action ?? 'view') === 'edit');
+?>
+
+<?php if (!$modeEdit): ?>
+  <!-- VIEW MODE -->
+  <div class="pro-hero card">
+    <div class="pro-banner"><?php if ($bannerSrc): ?><img src="<?= e($bannerSrc) ?>" alt=""><?php endif; ?></div>
+    <div class="pro-head">
+      <div class="pro-avatar"><img src="<?= e($avatarSrc) ?>" alt=""></div>
+      <div class="pro-meta">
+        <div class="pro-name"><?= e($u['name'] ?: 'Owner') ?></div>
+        <div class="pro-email"><?= e($u['email']) ?></div>
+        <span class="badge-role">Role: <?= e($u['role'] ?? 'OWNER') ?></span>
+        <?php if ($bioText): ?><p style="margin:.6rem 0 0"><?= nl2br(e($bioText)) ?></p>
+        <?php else: ?><p style="margin:.6rem 0 0; opacity:.8">Tambahkan bio singkatmu supaya profil lebih hidup ✨</p><?php endif; ?>
+        <div style="margin-top:12px"><a class="btn" href="profile.php?action=edit">Edit Profil</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section card">
+    <h2>Insight Profil</h2>
+    <div class="grid-3">
+      <div class="stat"><div class="lbl">Total Konten</div><div class="num"><?= number_format($stat_games+$stat_walks+$stat_chapters) ?></div></div>
+      <div class="stat"><div class="lbl">Uploads Terpakai</div><div class="num"><?= $uploads_used_mb ?> MB</div><div class="u-sub" style="margin-top:6px">Batas upload: <?= $upload_limit_mb ?> MB • POST: <?= $post_limit_mb ?> MB</div></div>
+      <div class="stat"><div class="lbl">Alamat IP</div><div class="num" style="font-size:1.25rem"><?= e($ip_addr) ?></div><div class="u-sub" style="margin-top:6px">Akses: <?= e($loginTime) ?></div></div>
+    </div>
+  </div>
+
+<?php else: ?>
+  <!-- EDIT MODE -->
+  <div class="edit-wrap">
+    <!-- Kolom kiri -->
+    <div class="form-card">
+      <h2 style="margin:0 0 .6rem">Edit Profil</h2>
+      <form method="post" action="profile.php" enctype="multipart/form-data" id="formProfile">
+        <?php csrf_field(); ?>
+        <input type="hidden" name="action" value="update">
+
+        <div class="field">
+          <label>Nama</label>
+          <input class="input" name="name" value="<?= e($u['name']) ?>">
+        </div>
+
+        <?php if ($HAS_BIO): ?>
+        <div class="field">
+          <label>Bio</label>
+          <textarea name="bio" placeholder="Ceritakan singkat tentangmu…"><?= e($bioText) ?></textarea>
+          <div class="help">Contoh: “UI/UX enthusiast • JRPG enjoyer • suka ngulik gameplay & build”.</div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($HAS_PWHASH): ?>
+          <div class="help" style="padding:.6rem .8rem;border-left:3px solid var(--primary);background:rgba(167,139,250,.08);border-radius:10px;margin-bottom:12px">
+            Ubah password hanya bila perlu. Kosongkan jika tidak ingin mengganti.
+          </div>
+          <div class="field">
+            <label>Password baru (opsional)</label>
+            <input class="input" type="password" name="new_password" autocomplete="new-password">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Ulangi password baru</label>
+            <input class="input" type="password" name="re_password" autocomplete="new-password">
+          </div>
+        <?php endif; ?>
+
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button class="btn">Simpan</button>
+          <a class="btn gray" href="profile.php">Batal</a>
+        </div>
+      </form>
+    </div>
+
+<!-- Kolom kanan : Gambar Profil (tile aesthetic) -->
+<div class="form-card">
+  <h2 style="margin:0 0 .6rem">Gambar Profil</h2>
+
+  <div class="media-grid">
+    <?php if ($HAS_AVATAR): ?>
+    <!-- AVATAR TILE -->
+    <div class="tile">
+      <div class="tile-head square">
+        <span class="badge">Avatar saat ini</span>
+        <img class="frame" src="<?= e($avatarSrc) ?>" alt="">
+      </div>
+      <div class="tile-body">
+        <div class="u-drop" id="dz-avatar">
+          <div class="u-title">Tarik & lepas atau klik untuk pilih</div>
+          <div class="u-prev" id="prevA"><img id="imgA" alt=""></div>
+        </div>
+        <div class="u-actions">
+          <label class="switch"><input type="checkbox" name="del_avatar" value="1"> Hapus avatar saat simpan</label>
+          <span class="note">Tips: pilih foto close-up agar jelas.</span>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($HAS_BANNER): ?>
+    <!-- BANNER TILE -->
+    <div class="tile">
+      <div class="tile-head banner">
+        <span class="badge">Banner saat ini</span>
+        <?php if ($bannerSrc): ?>
+          <img class="frame" src="<?= e($bannerSrc) ?>" alt="">
+        <?php else: ?>
+          <img class="frame" src="data:image/svg+xml;charset=utf-8,<?= rawurlencode('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'375\'><defs><linearGradient id=\'g\' x1=\'0\' y1=\'0\' x2=\'1\' y2=\'1\'><stop stop-color=\'#0f0f16\'/><stop offset=\'1\' stop-color=\'#1a1428\'/></linearGradient></defs><rect width=\'100%\' height=\'100%\' fill=\'url(#g)\'/><text x=\'50%\' y=\'52%\' fill=\'#777\' font-size=\'22\' font-family=\'Arial\' text-anchor=\'middle\'>Belum ada banner</text></svg>') ?>">
+        <?php endif; ?>
+      </div>
+      <div class="tile-body">
+        <div class="u-drop" id="dz-banner">
+          <div class="u-title">Tarik & lepas atau klik untuk pilih</div>
+          <div class="u-prev" id="prevB"><img id="imgB" alt=""></div>
+        </div>
+        <div class="u-actions">
+          <label class="switch"><input type="checkbox" name="del_banner" value="1"> Hapus banner saat simpan</label>
+          <span class="note">Hindari teks kecil pada banner.</span>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
+  </div>
+</div>
+ <?php endif; ?>
+
 <script>
-  function setPreview(el, file){
-    const img=document.createElement('img'); img.src=URL.createObjectURL(file);
-    img.onload=()=>URL.revokeObjectURL(img.src); el.innerHTML=''; el.appendChild(img);
-  }
-  function bindDrop(zoneId,inputId,previewId,maxBytes){
-    const zone=document.getElementById(zoneId), inp=document.getElementById(inputId), pv=document.getElementById(previewId);
-    if(!zone||!inp) return;
-    zone.addEventListener('click',()=>inp.click());
-    zone.addEventListener('dragover',e=>{e.preventDefault(); zone.classList.add('is-drag');});
-    zone.addEventListener('dragleave',()=>zone.classList.remove('is-drag'));
-    zone.addEventListener('drop',e=>{
-      e.preventDefault(); zone.classList.remove('is-drag');
-      const f=e.dataTransfer.files[0]; if(!f) return;
-      if(!['image/png','image/jpeg','image/webp'].includes(f.type)) {alert('Format harus PNG/JPG/WEBP'); return;}
-      if(f.size>maxBytes){alert('Ukuran file terlalu besar.'); return;}
-      inp.files=e.dataTransfer.files; if(pv) setPreview(pv,f);
+(function () {
+  function wire(zoneId, inputId, prevId, imgId, maxMB) {
+    const dz = document.getElementById(zoneId); if (!dz) return;
+    const input = document.getElementById(inputId);
+    const prev  = document.getElementById(prevId);
+    const img   = document.getElementById(imgId);
+    const ok = ['image/jpeg','image/png','image/webp'];
+
+    function show(f){
+      if (!ok.includes(f.type)) { alert('Format harus JPG/PNG/WEBP'); return; }
+      if (f.size > maxMB*1024*1024) { alert('Ukuran gambar > '+maxMB+'MB'); return; }
+      const r = new FileReader();
+      r.onload = e => { img.src = e.target.result; prev.style.display='block'; };
+      r.readAsDataURL(f);
+    }
+    dz.addEventListener('click', ()=> input.click());
+    dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+    dz.addEventListener('dragleave', ()=> dz.classList.remove('drag'));
+    dz.addEventListener('drop', e=>{
+      e.preventDefault(); dz.classList.remove('drag');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        input.files = e.dataTransfer.files; show(input.files[0]);
+      }
     });
-    inp.addEventListener('change',e=>{const f=e.target.files[0]; if(f&&pv) setPreview(pv,f);});
+    input.addEventListener('change', ()=> input.files[0] && show(input.files[0]));
   }
-  bindDrop('dropAvatar','inpAvatar','pvAvatar', 2*1024*1024);
-  bindDrop('dropBanner','inpBanner','pvBanner', 3*1024*1024);
+  wire('dz-avatar','avatar','prevA','imgA',2);
+  wire('dz-banner','banner','prevB','imgB',4);
+})();
 </script>
 
-<?php include __DIR__ . '/_footer.php';
+<?php require_once __DIR__ . '/_footer.php';

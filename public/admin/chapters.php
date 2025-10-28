@@ -4,11 +4,23 @@
    ======================================================================== */
 
 require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../lib/helpers.php';      // <-- untuk flash(), redirect(), e()
+require_once __DIR__ . '/../../lib/auth.php';
+require_admin();
+
+if (session_status() === PHP_SESSION_NONE) {
+  session_set_cookie_params(['httponly'=>true,'samesite'=>'Lax']);
+  session_start();
+}
+
 require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/csrf.php';
 require_once __DIR__ . '/../../lib/validation.php';
 
-$action = $_GET['action'] ?? 'list';
+/* ✅ Utamakan POST agar submit Edit tidak mentok di action=edit (GET) */
+$action = $_POST['action'] ?? ($_GET['action'] ?? 'list');
+
+/* ✅ Verifikasi CSRF hanya untuk POST */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') csrf_verify();
 
 /* ---------- util: cek kolom ada ---------- */
@@ -45,13 +57,23 @@ function upload_chapter_image(string $seed): ?string {
   $map  = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'];
   if (!isset($map[$mime])) throw new Exception('Format harus JPG/PNG/WEBP.');
 
-  $root = $_SERVER['DOCUMENT_ROOT'].'/arcadia/uploads/chapters';
-  if (!is_dir($root)) @mkdir($root,0775,true);
+  // === simpan di /public/uploads/chapters (webroot), auto-mkdir ===
+  if (!defined('UPLOADS_PATH')) define('UPLOADS_PATH', realpath(__DIR__ . '/../../public') . '/uploads');
+  $uploadRoot = UPLOADS_PATH . '/chapters';
+  if (!is_dir($uploadRoot)) @mkdir($uploadRoot, 0775, true);
 
-  $slug = strtolower(trim(preg_replace('~[^a-z0-9]+~i','-',$seed),'-'));
+  $slug = strtolower(trim(preg_replace('~[^a-z0-9]+~i','-',$seed ?: 'chapter'),'-'));
   $name = $slug.'-'.date('YmdHis').'-'.bin2hex(random_bytes(3)).'.'.$map[$mime];
-  if (!move_uploaded_file($tmp,$root.'/'.$name)) throw new Exception('Gagal menyimpan gambar.');
-  return '/arcadia/uploads/chapters/'.$name;
+
+  if (!move_uploaded_file($tmp, $uploadRoot . '/' . $name)) {
+    throw new Exception('Gagal menyimpan gambar.');
+  }
+
+  // URL publik
+  if (!function_exists('asset_url')) {
+    function asset_url(string $p=''){ return '/arcadia/public/'.ltrim($p,'/'); } // fallback bila belum didefinisikan
+  }
+  return asset_url('uploads/chapters/'.$name);
 }
 
 /* ---------- referensi walkthrough ---------- */
@@ -66,11 +88,14 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD']==='POST') {
     $content      = str_trim($_POST['content'] ?? '');
     $youtube_url  = $HAS_YT ? str_trim($_POST['youtube_url'] ?? '') : null;
 
+    // upload dulu (jika ada)
+    $imgUrl = $HAS_IMG ? upload_chapter_image($title) : null;
+
     if ($HAS_YT && $HAS_IMG) {
       db_exec($mysqli,
         "INSERT INTO chapters(walk_id,title,content,order_number,youtube_url,image_url)
          VALUES(?,?,?,?,?,?)",
-        [$walk_id,$title,$content,$order_number,$youtube_url,''],
+        [$walk_id,$title,$content,$order_number,$youtube_url,$imgUrl ?: ''],
         'ississ');
     } elseif ($HAS_YT) {
       db_exec($mysqli,
@@ -82,7 +107,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD']==='POST') {
       db_exec($mysqli,
         "INSERT INTO chapters(walk_id,title,content,order_number,image_url)
          VALUES(?,?,?,?,?)",
-        [$walk_id,$title,$content,$order_number,''],
+        [$walk_id,$title,$content,$order_number,$imgUrl ?: ''],
         'issis');
     } else {
       db_exec($mysqli,
@@ -92,18 +117,12 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD']==='POST') {
         'issi');
     }
 
-    $newId = mysqli_insert_id($mysqli);
-    if ($HAS_IMG) {
-      try {
-        if ($u = upload_chapter_image($title)) {
-          db_exec($mysqli,"UPDATE chapters SET image_url=? WHERE id=?",[$u,$newId],'si');
-        }
-      } catch (Exception $eUp) { flash('err',$eUp->getMessage()); }
-    }
-
     flash('ok','Chapter dibuat.');
     redirect('chapters.php');
-  } catch (Exception $e) { flash('err',$e->getMessage()); redirect('chapters.php'); }
+  } catch (Exception $e) {
+    flash('err',$e->getMessage());
+    redirect('chapters.php');
+  }
 }
 
 if ($action === 'update' && $_SERVER['REQUEST_METHOD']==='POST') {
@@ -115,29 +134,41 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD']==='POST') {
     $content      = str_trim($_POST['content'] ?? '');
     $youtube_url  = $HAS_YT ? str_trim($_POST['youtube_url'] ?? '') : null;
 
-    if ($HAS_YT) {
-      db_exec($mysqli,
-        "UPDATE chapters SET walk_id=?, title=?, content=?, order_number=?, youtube_url=? WHERE id=?",
-        [$walk_id,$title,$content,$order_number,$youtube_url,$id],
-        'issisi');
-    } else {
-      db_exec($mysqli,
-        "UPDATE chapters SET walk_id=?, title=?, content=?, order_number=? WHERE id=?",
-        [$walk_id,$title,$content,$order_number,$id],
-        'issii');
-    }
+    // cek apakah ada gambar baru
+    $imgUrl = $HAS_IMG ? upload_chapter_image($title) : null;
 
-    if ($HAS_IMG) {
-      try {
-        if ($u = upload_chapter_image($title)) {
-          db_exec($mysqli,"UPDATE chapters SET image_url=? WHERE id=?",[$u,$id],'si');
-        }
-      } catch (Exception $eUp) { flash('err',$eUp->getMessage()); }
+    if ($HAS_YT) {
+      if ($imgUrl !== null && $HAS_IMG) {
+        db_exec($mysqli,
+          "UPDATE chapters SET walk_id=?, title=?, content=?, order_number=?, youtube_url=?, image_url=? WHERE id=?",
+          [$walk_id,$title,$content,$order_number,$youtube_url,$imgUrl,$id],
+          'ississi');
+      } else {
+        db_exec($mysqli,
+          "UPDATE chapters SET walk_id=?, title=?, content=?, order_number=?, youtube_url=? WHERE id=?",
+          [$walk_id,$title,$content,$order_number,$youtube_url,$id],
+          'issisi');
+      }
+    } else {
+      if ($imgUrl !== null && $HAS_IMG) {
+        db_exec($mysqli,
+          "UPDATE chapters SET walk_id=?, title=?, content=?, order_number=?, image_url=? WHERE id=?",
+          [$walk_id,$title,$content,$order_number,$imgUrl,$id],
+          'issisi');
+      } else {
+        db_exec($mysqli,
+          "UPDATE chapters SET walk_id=?, title=?, content=?, order_number=? WHERE id=?",
+          [$walk_id,$title,$content,$order_number,$id],
+          'issii');
+      }
     }
 
     flash('ok','Chapter diperbarui.');
     redirect('chapters.php');
-  } catch (Exception $e) { flash('err',$e->getMessage()); redirect('chapters.php'); }
+  } catch (Exception $e) {
+    flash('err',$e->getMessage());
+    redirect('chapters.php');
+  }
 }
 
 if ($action === 'delete') {
@@ -243,7 +274,8 @@ if ($action === 'edit') {
 ?>
   <div class="card">
     <h2>Edit</h2>
-    <form method="post" enctype="multipart/form-data" class="grid">
+    <!-- ✅ submit ke file yang sama, aksi via hidden -->
+    <form method="post" action="chapters.php" enctype="multipart/form-data" class="grid">
       <?php csrf_field(); ?>
       <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
       <input type="hidden" name="action" value="update">
@@ -296,8 +328,10 @@ if ($action === 'edit') {
 ?>
   <div class="card">
     <h2>Tambah</h2>
-    <form method="post" action="chapters.php?action=create" enctype="multipart/form-data" class="grid">
+    <!-- ✅ submit ke file yang sama; aksi via hidden -->
+    <form method="post" action="chapters.php" enctype="multipart/form-data" class="grid">
       <?php csrf_field(); ?>
+      <input type="hidden" name="action" value="create">
 
       <label>Walkthrough
         <select name="walk_id">

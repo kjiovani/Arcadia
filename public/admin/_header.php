@@ -2,24 +2,24 @@
 require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../lib/helpers.php';
 require_once __DIR__ . '/../../lib/auth.php';
-require_once __DIR__ . '/../../lib/db.php';          // <-- tambahkan
+require_once __DIR__ . '/../../lib/db.php';
 require_admin();
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-$path = $_SERVER['SCRIPT_NAME'] ?? '';
-function active($needle, $path) {
+/* ==== Helper aktif menu (pakai REQUEST_URI agar query string aman) ==== */
+$path = (string)($_SERVER['REQUEST_URI'] ?? '');
+function active(string $needle, string $path): string {
   return (strpos($path, $needle) !== false) ? 'is-active' : '';
 }
 
 /* ==== Ambil user dari session, lalu REFRESH dari DB agar avatar terbaru tampil ==== */
-$me      = $_SESSION['user'] ?? [];
-$uid     = (int)($me['id'] ?? 0);
+$me  = $_SESSION['user'] ?? [];
+$uid = (int)($me['id'] ?? 0);
 
 if ($uid > 0) {
-  // hanya ambil kolom yang perlu
   $row = db_one($mysqli, "SELECT name, role, avatar_url FROM users WHERE id=?", [$uid], 'i');
   if ($row) {
-    // sinkronkan ke session
     foreach (['name','role','avatar_url'] as $k) {
       if (isset($row[$k]) && $row[$k] !== null && $row[$k] !== '') {
         $_SESSION['user'][$k] = $row[$k];
@@ -31,9 +31,27 @@ if ($uid > 0) {
 
 $userName   = e($me['name'] ?? 'Admin');
 $userRole   = strtolower((string)($me['role'] ?? 'admin'));
-$userAvatar = trim((string)($me['avatar_url'] ?? '')); // kosong => fallback inisial
-?>
+$userAvatar = trim((string)($me['avatar_url'] ?? ''));
 
+// info owner
+$meFull  = function_exists('current_user') ? current_user() : ($_SESSION['user'] ?? null);
+$isOwner = $meFull && strtoupper($meFull['role'] ?? '') === 'OWNER';
+
+/* ==== App settings (logo & brand colors) ==== */
+function app_setting($k,$def=''){
+  global $mysqli;
+  // kalau tabel belum ada, aman fallback
+  $has = $mysqli->query("SHOW TABLES LIKE 'app_settings'");
+  if(!$has || $has->num_rows===0) return $def;
+  $row = db_one($mysqli,"SELECT value FROM app_settings WHERE `key`=?",[$k],'s');
+  return $row['value'] ?? $def;
+}
+
+$APP_LOGO = app_setting('site_logo_url','');     // URL logo (opsional)
+$P1 = app_setting('brand_color_p1','#c9b3ff');   // warna gradient 1
+$P2 = app_setting('brand_color_p2','#9a78ff');   // warna gradient 2
+$P3 = app_setting('brand_color_p3','#7a5cff');   // warna gradient 3
+?>
 <!doctype html>
 <html lang="id">
 <head>
@@ -42,6 +60,13 @@ $userAvatar = trim((string)($me['avatar_url'] ?? '')); // kosong => fallback ini
   <title>Owner</title>
   <link rel="stylesheet" href="/arcadia/assets/styles.css" />
   <style>
+    /* brand colors (bisa diubah dari Owner UI Editor) */
+    :root{
+      --arc-p1: <?= e($P1) ?>;
+      --arc-p2: <?= e($P2) ?>;
+      --arc-p3: <?= e($P3) ?>;
+    }
+
     :root{ --bg:#0e0e15; --panel:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
            --border:rgba(255,255,255,.08); --muted:rgba(255,255,255,.72);
            --primary:#a78bfa; --ring:rgba(167,139,250,.35); }
@@ -62,42 +87,37 @@ $userAvatar = trim((string)($me['avatar_url'] ?? '')); // kosong => fallback ini
     .nav-foot{margin-top:auto;padding-top:8px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:8px;color:var(--muted)}
     .user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--panel);text-decoration:none;color:inherit}
     .user-chip:hover{border-color:var(--primary)}
-    /* === Tambahan: avatar support (img / inisial) === */
     .avatar{width:34px;height:34px;border-radius:10px;overflow:hidden;display:grid;place-items:center;font-weight:800;background:rgba(255,255,255,.08);border:1px solid var(--border)}
     .avatar img{width:100%;height:100%;object-fit:cover;display:block}
     .role{opacity:.8;margin-left:auto;font-size:.85rem}
     .logout{color:inherit;text-decoration:none;font-weight:600;padding:10px 12px;border-radius:12px;border:1px solid var(--border)}
     .logout:hover{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.45);color:#fff}
-    /* GANTI bagian ini */
 
-/* semula: .topbar { display:none; ... display:flex; } -> bikin selalu muncul */
-.topbar{
-  display:none;                 /* desktop: sembunyikan total */
-  position:sticky; top:0; z-index:20;
-  background:var(--bg);
-  border-bottom:1px solid var(--border);
-  padding:10px 14px;
-  align-items:center; justify-content:space-between;
-}
-.menu-btn{display:none; border:1px solid var(--border); background:var(--panel); padding:.45rem .7rem; border-radius:10px; color:inherit; cursor:pointer}
+    /* Topbar mobile */
+    .topbar{
+      display:none;
+      position:sticky; top:0; z-index:20;
+      background:var(--bg);
+      border-bottom:1px solid var(--border);
+      padding:10px 14px;
+      align-items:center; justify-content:space-between;
+    }
+    .menu-btn{display:none; border:1px solid var(--border); background:var(--panel); padding:.45rem .7rem; border-radius:10px; color:inherit; cursor:pointer}
+    @media (max-width:980px){
+      .topbar{display:flex}
+      .menu-btn{display:inline-block}
+    }
 
-/* Tampilkan topbar hanya di layar kecil */
-@media (max-width:980px){
-  .topbar{display:flex}
-  .menu-btn{display:inline-block}
-}
+    .admin-main{padding:0 22px 22px}
+    .page-title{margin:0 0 12px; font-weight:800}
+    .container > :first-child{margin-top:0}
 
-/* Kurangi padding atas area konten supaya nempel ke atas */
-.admin-main{padding:0 22px 22px}
-
-/* Hapus margin atas elemen pertama di dalam .container / judul halaman */
-.page-title{margin:0 0 12px; font-weight:800}
-.container > :first-child{margin-top:0}
-
-    @media (max-width:980px){.topbar .menu-btn{display:inline-block}}
     .admin-main{padding:22px}.container{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px}
     .sidenav[data-collapsed="true"]{display:none}
-    @media (max-width:980px){.sidenav[data-collapsed="true"]{display:none}.sidenav[data-collapsed="false"]{display:flex}}
+    @media (max-width:980px){
+      .sidenav[data-collapsed="true"]{display:none}
+      .sidenav[data-collapsed="false"]{display:flex}
+    }
   </style>
 </head>
 <body>
@@ -105,8 +125,13 @@ $userAvatar = trim((string)($me['avatar_url'] ?? '')); // kosong => fallback ini
 <div class="admin-layout">
   <aside class="sidenav" id="sidenav" data-collapsed="false">
     <div class="brand">
-      <div class="brand-badge">⟡</div>
-      <div>Owner Arcadia</div>
+      <?php if ($APP_LOGO): ?>
+        <img src="<?= e($APP_LOGO) ?>" alt="Logo" style="height:28px;width:auto;display:block">
+        <div>Owner Arcadia</div>
+      <?php else: ?>
+        <div class="brand-badge">⟡</div>
+        <div>Owner Arcadia</div>
+      <?php endif; ?>
     </div>
 
     <div class="nav-section">
@@ -118,12 +143,17 @@ $userAvatar = trim((string)($me['avatar_url'] ?? '')); // kosong => fallback ini
         <li><a class="nav-link <?= active('/admin/walkthroughs.php', $path) ?>" href="/arcadia/public/admin/walkthroughs.php">Walkthroughs</a></li>
         <li><a class="nav-link <?= active('/admin/chapters.php', $path) ?>" href="/arcadia/public/admin/chapters.php">Chapters</a></li>
         <li><a class="nav-link <?= active('/admin/tags.php', $path) ?>" href="/arcadia/public/admin/tags.php">Tags</a></li>
-        
+        <?php if ($isOwner): ?>
+          <li><a class="nav-link <?= active('/admin/users.php', $path) ?>" href="/arcadia/public/admin/users.php">Akun</a></li>
+        <?php endif; ?>
+        <?php if ($isOwner): ?>
+  <li><a class="nav-link <?= active('/admin/appearance.php', $path) ?>" href="/arcadia/public/admin/appearance.php">Tampilan</a></li>
+<?php endif; ?>
+
       </ul>
     </div>
 
     <div class="nav-foot">
-      <!-- Chip user menuju profil -->
       <a class="user-chip" href="/arcadia/public/admin/profile.php" title="Kelola profil">
         <div class="avatar">
           <?php if ($userAvatar !== ''): ?>
@@ -160,3 +190,9 @@ $userAvatar = trim((string)($me['avatar_url'] ?? '')); // kosong => fallback ini
   });
 })();
 </script>
+<?php
+// Muat Owner UI Editor (hanya untuk OWNER)
+if ($isOwner) {
+  echo '<script src="/arcadia/public/assets/owner-ui.js" defer></script>';
+}
+?>
