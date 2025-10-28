@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 28 Okt 2025 pada 06.18
+-- Waktu pembuatan: 28 Okt 2025 pada 21.44
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -32,6 +32,18 @@ CREATE TABLE `app_settings` (
   `value` text DEFAULT NULL,
   `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `app_settings`
+--
+
+INSERT INTO `app_settings` (`key`, `value`, `updated_at`) VALUES
+('brand_name', 'Arcadia', '2025-10-29 02:32:18'),
+('hero_subtitle', 'Cari walkthrough, chapter, dan tips yang jelas untuk menamatkan game favoritmu.', '2025-10-29 02:32:18'),
+('hero_title', 'Arcadia', '2025-10-29 02:32:18'),
+('logo_section_featured', '/arcadia/public/uploads/branding/featured_20251029023204_86cc5775.png', '2025-10-29 02:32:04'),
+('logo_section_games', '/arcadia/public/uploads/branding/games_20251029012454_7f2c2ca3.png', '2025-10-29 01:24:54'),
+('logo_section_recent', '/arcadia/public/uploads/branding/recent_20251029023218_a5f19348.png', '2025-10-29 02:32:18');
 
 -- --------------------------------------------------------
 
@@ -106,17 +118,18 @@ CREATE TABLE `games` (
   `cover_blob` longblob DEFAULT NULL,
   `cover_mime` varchar(40) DEFAULT NULL,
   `cover_size` int(11) DEFAULT NULL,
-  `cover_focus_x` tinyint(4) DEFAULT 50,
-  `cover_focus_y` tinyint(4) DEFAULT 50
+  `image_original_url` text DEFAULT NULL,
+  `cover_focus_x` int(11) DEFAULT NULL,
+  `cover_focus_y` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data untuk tabel `games`
 --
 
-INSERT INTO `games` (`id`, `title`, `genre`, `platform`, `release_year`, `image_url`, `description`, `cover_blob`, `cover_mime`, `cover_size`, `cover_focus_x`, `cover_focus_y`) VALUES
-(1, 'Elden Ring', 'Action RPG', 'PC/Console', 2022, '/arcadia/public/uploads/covers/elden-ring-20251028081323-ee9a12.jpg', 'Petualangan di Lands Between dengan bos menantang.', NULL, NULL, NULL, 50, 50),
-(2, 'Zelda: Tears of the Kingdom', 'Adventure', 'Switch', 2023, '/arcadia/public/uploads/covers/zelda-tears-of-the-kingdom-20251028081449-bc8790.jpg', 'Eksplorasi open world, crafting, dan shrine.', NULL, NULL, NULL, 50, 50);
+INSERT INTO `games` (`id`, `title`, `genre`, `platform`, `release_year`, `image_url`, `description`, `cover_blob`, `cover_mime`, `cover_size`, `image_original_url`, `cover_focus_x`, `cover_focus_y`) VALUES
+(1, 'Elden Ring', 'Action RPG', 'PC/Console', 2022, '/arcadia/public/uploads/covers/game_1_20251029033204_b9ad87.webp', 'Petualangan di Lands Between dengan bos menantang.', NULL, NULL, NULL, '/arcadia/public/uploads/covers/elden-ring-20251028081323-ee9a12.jpg', NULL, NULL),
+(2, 'Zelda: Tears of the Kingdom', 'Adventure', 'Switch', 2023, '/arcadia/public/uploads/covers/game_2_20251029033144_9b3dcd.webp', 'Eksplorasi open world, crafting, dan shrine.', NULL, NULL, NULL, '/arcadia/public/uploads/covers/zelda-tears-of-the-kingdom-20251028081449-bc8790.jpg', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -171,10 +184,13 @@ CREATE TABLE `settings` (
 --
 
 INSERT INTO `settings` (`key`, `value`, `updated_at`) VALUES
-('brand_name', 'Arcadia', '2025-10-28 04:33:29'),
-('hero_subtitle', 'Cari walkthrough, chapter, dan tips yang jelas untuk menamatkan game favoritmu.', '2025-10-28 04:33:29'),
-('hero_title', 'Arcadia', '2025-10-28 04:33:29'),
-('site_logo_url', '', '2025-10-28 04:33:29');
+('brand_name', 'Arcadia', '2025-10-28 19:32:18'),
+('hero_subtitle', 'Cari walkthrough, chapter, dan tips yang jelas untuk menamatkan game favoritmu.', '2025-10-28 19:32:18'),
+('hero_title', 'Arcadia', '2025-10-28 19:32:18'),
+('logo_section_featured', '/arcadia/public/uploads/branding/featured_20251029023204_86cc5775.png', '2025-10-28 19:32:04'),
+('logo_section_games', '/arcadia/public/uploads/branding/games_20251029012454_7f2c2ca3.png', '2025-10-28 18:24:54'),
+('logo_section_recent', '/arcadia/public/uploads/branding/recent_20251029023218_a5f19348.png', '2025-10-28 19:32:18'),
+('site_logo_url', '/arcadia/public/uploads/branding/logo_20251028141129_840cf4e3.png', '2025-10-28 07:11:29');
 
 -- --------------------------------------------------------
 
@@ -215,8 +231,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `full_name`, `username`, `email`, `password_hash`, `role`, `avatar_url`, `banner_url`, `created_at`, `last_login_at`, `bio`, `is_active`, `updated_at`) VALUES
-(1, 'Aragorn', NULL, NULL, 'owner@arcadia.com', '$2y$10$DLN.d2z9VQoPbYmtUzeOj.hNJFk.AggyJjzNVHXwUwahXXPb3PdSG', 'OWNER', '/arcadia/public/uploads/avatars/u1-20251027170836-1ecfc0.png', '/arcadia/public/uploads/banners/b1-20251027171848-382de1.png', '2025-10-20 09:27:01', '2025-10-28 11:23:20', 'Owner Website Arcadia', 1, '2025-10-28 04:23:20'),
-(4, 'Giovani', NULL, NULL, 'giovani@arca.com', '$2y$10$PdOFAzPutPW3ZvoP7x7fxuOcZu/aVvbJ1e5IZ63FqazUG60ursQWi', 'USER', NULL, NULL, '2025-10-26 09:41:30', '2025-10-28 07:29:02', NULL, 1, '2025-10-28 02:21:58'),
+(1, 'Aragorn', NULL, NULL, 'owner@arcadia.com', '$2y$10$DLN.d2z9VQoPbYmtUzeOj.hNJFk.AggyJjzNVHXwUwahXXPb3PdSG', 'OWNER', '/arcadia/public/uploads/avatars/u1-20251027170836-1ecfc0.png', '/arcadia/public/uploads/banners/b1-20251027171848-382de1.png', '2025-10-20 09:27:01', '2025-10-29 01:02:05', 'Owner Website Arcadia', 1, '2025-10-28 18:02:05'),
+(4, 'Giovani', NULL, NULL, 'giovani@arca.com', '$2y$10$PdOFAzPutPW3ZvoP7x7fxuOcZu/aVvbJ1e5IZ63FqazUG60ursQWi', 'USER', NULL, NULL, '2025-10-26 09:41:30', '2025-10-28 23:16:12', NULL, 1, '2025-10-28 16:16:12'),
 (5, 'Shaila', NULL, NULL, 'shaila@arca.com', '$2y$10$.aPIxIFjtS1ucJk89mWoueSlaU2ZjXJSNK3t3t.MQGQkQhj4iWtjq', 'USER', NULL, NULL, '2025-10-26 19:59:48', NULL, NULL, 1, '2025-10-28 03:37:57');
 
 -- --------------------------------------------------------
