@@ -20,7 +20,14 @@ if (!defined('UPLOADS_PATH')) {
 if (!function_exists('asset_url')) {
   function asset_url(string $p = '') { return '/arcadia/public/' . ltrim($p, '/'); }
 }
-function upload_image(array $file, string $subdir, string $seed, int $maxMB = 3): ?string {
+
+/**
+ * Upload image (seragam untuk avatar/banner)
+ * - Terima: JPG/PNG/WEBP/GIF
+ * - Validasi: MIME asli + getimagesize (pastikan benar2 gambar)
+ * - Output: URL relatif web (/arcadia/public/uploads/...)
+ */
+function upload_image(array $file, string $subdir, string $seed, int $maxMB = 5): ?string {
   if (empty($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return null;
   if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) throw new Exception('Upload gagal (code ' . ($file['error'] ?? -1) . ').');
 
@@ -29,16 +36,31 @@ function upload_image(array $file, string $subdir, string $seed, int $maxMB = 3)
   if (!$tmp || $size <= 0) return null;
   if ($size > $maxMB * 1024 * 1024) throw new Exception("Ukuran gambar > {$maxMB}MB.");
 
+  // Validasi MIME asli
   $fi   = new finfo(FILEINFO_MIME_TYPE);
   $mime = $fi->file($tmp);
-  $map  = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'];
-  if (!isset($map[$mime])) throw new Exception('Format harus JPG/PNG/WEBP.');
+
+  $map  = [
+    'image/jpeg' => 'jpg',
+    'image/png'  => 'png',
+    'image/webp' => 'webp',
+    'image/gif'  => 'gif',
+  ];
+  if (!isset($map[$mime])) throw new Exception('Format didukung: JPG/PNG/WEBP/GIF.');
+
+  // Pastikan benar-benar gambar (ambil dimensi)
+  $info = @getimagesize($tmp);
+  if (!$info || empty($info[0]) || empty($info[1])) {
+    throw new Exception('File tidak terdeteksi sebagai gambar yang valid.');
+  }
 
   $dir = rtrim(UPLOADS_PATH, '/')."/{$subdir}";
   if (!is_dir($dir)) @mkdir($dir, 0775, true);
 
-  $slug = strtolower(trim(preg_replace('~[^a-z0-9]+~i','-',$seed ?: 'img'),'-'));
+  $seed = $seed ?: 'img';
+  $slug = strtolower(trim(preg_replace('~[^a-z0-9]+~i','-',$seed),'-'));
   $name = $slug.'-'.date('YmdHis').'-'.bin2hex(random_bytes(3)).'.'.$map[$mime];
+
   if (!move_uploaded_file($tmp, $dir.'/'.$name)) throw new Exception('Gagal menyimpan file.');
   return asset_url("uploads/{$subdir}/{$name}");
 }
@@ -118,8 +140,8 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // upload baru (menimpa jika ada file)
-    if ($HAS_AVATAR) { if ($url = upload_image($_FILES['avatar'] ?? [], 'avatars', $name, 2)) { $fields[]='avatar_url=?'; $bind[]=$url; } }
-    if ($HAS_BANNER) { if ($url = upload_image($_FILES['banner'] ?? [], 'banners', $name, 4)) { $fields[]='banner_url=?'; $bind[]=$url; } }
+    if ($HAS_AVATAR) { if ($url = upload_image($_FILES['avatar'] ?? [], 'avatars', $name, 5)) { $fields[]='avatar_url=?'; $bind[]=$url; } }
+    if ($HAS_BANNER) { if ($url = upload_image($_FILES['banner'] ?? [], 'banners', $name, 8)) { $fields[]='banner_url=?'; $bind[]=$url; } }
 
     $bind[] = $user_id;
     $types  = str_repeat('s', count($bind)-1) . 'i';
@@ -181,49 +203,8 @@ include __DIR__ . '/_header.php';
 .field{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
 .help{font-size:.85rem;opacity:.75;margin-top:-4px}
 
-/* ===== Uploader (aesthetic) ===== */
-.media-grid{display:grid;gap:16px}
-.tile{
-  border-radius:16px; overflow:hidden; position:relative;
-  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
-  border:1px solid transparent;
-  background-clip: padding-box, border-box;
-  box-shadow:0 8px 28px rgba(0,0,0,.22);
-}
-.tile::before{
-  content:""; position:absolute; inset:0; z-index:0; border-radius:16px;
-  padding:1px; -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor; mask-composite:exclude;
-  background:linear-gradient(135deg,rgba(167,139,250,.55),rgba(99,102,241,.35),rgba(236,72,153,.35));
-}
-.tile-head{position:relative; z-index:1}
-.tile-head .badge{
-  position:absolute; left:10px; top:10px; padding:.22rem .55rem; font-size:.75rem; font-weight:800;
-  border-radius:999px; border:1px solid rgba(255,255,255,.22); background:rgba(0,0,0,.55)
-}
-.tile-head .frame{display:block; width:100%; height:100%; object-fit:cover}
-.tile-head.square{width:180px; height:180px; margin:14px auto 0; border-radius:14px; overflow:hidden}
-.tile-head.banner{aspect-ratio:16/5; border-radius:12px; overflow:hidden; margin:14px}
-
-.tile-body{position:relative; z-index:1; padding:12px 14px 14px}
-.u-drop{
-  display:grid; place-items:center; text-align:center;
-  border:1px dashed rgba(167,139,250,.55); border-radius:12px; padding:16px;
-  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
-  transition:.15s border-color ease,.15s box-shadow ease
-}
-.u-drop:hover{border-color:#a78bfa; box-shadow:0 0 0 3px rgba(167,139,250,.18) inset}
-.u-drop.drag{border-color:#a78bfa; box-shadow:0 0 0 3px rgba(167,139,250,.28) inset}
-.u-ico{font-size:26px; line-height:1}
-.u-title{font-weight:900; margin-top:6px}
-.u-sub{opacity:.7; font-size:.9rem}
-.u-prev{display:none; margin-top:10px; border:1px solid rgba(255,255,255,.1); border-radius:10px; overflow:hidden}
-.u-prev img{display:block; max-width:100%}
-
-.u-actions{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px}
-.switch{display:inline-flex; align-items:center; gap:8px; font-weight:700; opacity:.9}
-.switch input{accent-color:#a78bfa; width:18px; height:18px}
-.note{font-size:.85rem; opacity:.75}
+/* ===== Dropzone preview tweaks (sinkron dengan header) ===== */
+.dropzone [data-preview]{display:block;border-radius:12px;border:1px solid rgba(255,255,255,.1)}
 </style>
 
 <div class="card">
@@ -309,88 +290,59 @@ $modeEdit  = (($action ?? 'view') === 'edit');
       </form>
     </div>
 
-<!-- Kolom kanan : Gambar Profil (tile aesthetic) -->
-<div class="form-card">
-  <h2 style="margin:0 0 .6rem">Gambar Profil</h2>
+    <!-- Kolom kanan : Gambar Profil (dropzone seragam) -->
+    <div class="form-card">
+      <h2 style="margin:0 0 .6rem">Gambar Profil</h2>
 
-  <div class="media-grid">
-    <?php if ($HAS_AVATAR): ?>
-    <!-- AVATAR TILE -->
-    <div class="tile">
-      <div class="tile-head square">
-        <span class="badge">Avatar saat ini</span>
-        <img class="frame" src="<?= e($avatarSrc) ?>" alt="">
-      </div>
-      <div class="tile-body">
-        <div class="u-drop" id="dz-avatar">
-          <div class="u-title">Tarik & lepas atau klik untuk pilih</div>
-          <div class="u-prev" id="prevA"><img id="imgA" alt=""></div>
+      <div class="media-grid">
+        <?php if ($HAS_AVATAR): ?>
+        <!-- AVATAR -->
+        <div class="tile">
+          <div class="tile-head square">
+            <span class="badge">Avatar saat ini</span>
+            <img class="frame" src="<?= e($avatarSrc) ?>" alt="">
+          </div>
+          <div class="tile-body">
+            <div class="dropzone" data-dropzone>
+              <img data-preview id="prev-avatar" alt="" style="width:180px;height:180px;object-fit:cover;display:block;margin:8px auto 6px;border-radius:12px;<?= /* hide if no selection yet */ '' ?>">
+              <div class="hint" data-label>Tarik & lepas atau klik untuk pilih (JPG/PNG/WEBP/GIF)</div>
+              <input type="file" name="avatar" id="avatar" class="hidden" accept="image/*">
+            </div>
+            <div class="u-actions" style="margin-top:10px">
+              <label class="switch"><input type="checkbox" name="del_avatar" value="1"> Hapus avatar saat simpan</label>
+              <span class="note">Tips: pilih foto close-up agar jelas.</span>
+            </div>
+          </div>
         </div>
-        <div class="u-actions">
-          <label class="switch"><input type="checkbox" name="del_avatar" value="1"> Hapus avatar saat simpan</label>
-          <span class="note">Tips: pilih foto close-up agar jelas.</span>
-        </div>
-      </div>
-    </div>
-    <?php endif; ?>
+        <?php endif; ?>
 
-    <?php if ($HAS_BANNER): ?>
-    <!-- BANNER TILE -->
-    <div class="tile">
-      <div class="tile-head banner">
-        <span class="badge">Banner saat ini</span>
-        <?php if ($bannerSrc): ?>
-          <img class="frame" src="<?= e($bannerSrc) ?>" alt="">
-        <?php else: ?>
-          <img class="frame" src="data:image/svg+xml;charset=utf-8,<?= rawurlencode('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'375\'><defs><linearGradient id=\'g\' x1=\'0\' y1=\'0\' x2=\'1\' y2=\'1\'><stop stop-color=\'#0f0f16\'/><stop offset=\'1\' stop-color=\'#1a1428\'/></linearGradient></defs><rect width=\'100%\' height=\'100%\' fill=\'url(#g)\'/><text x=\'50%\' y=\'52%\' fill=\'#777\' font-size=\'22\' font-family=\'Arial\' text-anchor=\'middle\'>Belum ada banner</text></svg>') ?>">
+        <?php if ($HAS_BANNER): ?>
+        <!-- BANNER -->
+        <div class="tile">
+          <div class="tile-head banner">
+            <span class="badge">Banner saat ini</span>
+            <?php if ($bannerSrc): ?>
+              <img class="frame" src="<?= e($bannerSrc) ?>" alt="">
+            <?php else: ?>
+              <img class="frame" src="data:image/svg+xml;charset=utf-8,<?= rawurlencode('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'375\'><defs><linearGradient id=\'g\' x1=\'0\' y1=\'0\' x2=\'1\' y2=\'1\'><stop stop-color=\'#0f0f16\'/><stop offset=\'1\' stop-color=\'#1a1428\'/></linearGradient></defs><rect width=\'100%\' height=\'100%\' fill=\'url(#g)\'/><text x=\'50%\' y=\'52%\' fill=\'#777\' font-size=\'22\' font-family=\'Arial\' text-anchor=\'middle\'>Belum ada banner</text></svg>') ?>">
+            <?php endif; ?>
+          </div>
+          <div class="tile-body">
+            <div class="dropzone" data-dropzone>
+              <img data-preview id="prev-banner" alt="" style="width:100%;height:120px;object-fit:cover;margin:8px 0 6px;border-radius:12px;">
+              <div class="hint" data-label>Tarik & lepas atau klik untuk pilih (JPG/PNG/WEBP/GIF)</div>
+              <input type="file" name="banner" id="banner" class="hidden" accept="image/*">
+            </div>
+            <div class="u-actions" style="margin-top:10px">
+              <label class="switch"><input type="checkbox" name="del_banner" value="1"> Hapus banner saat simpan</label>
+              <span class="note">Hindari teks kecil pada banner.</span>
+            </div>
+          </div>
+        </div>
         <?php endif; ?>
       </div>
-      <div class="tile-body">
-        <div class="u-drop" id="dz-banner">
-          <div class="u-title">Tarik & lepas atau klik untuk pilih</div>
-          <div class="u-prev" id="prevB"><img id="imgB" alt=""></div>
-        </div>
-        <div class="u-actions">
-          <label class="switch"><input type="checkbox" name="del_banner" value="1"> Hapus banner saat simpan</label>
-          <span class="note">Hindari teks kecil pada banner.</span>
-        </div>
-      </div>
     </div>
-    <?php endif; ?>
   </div>
-</div>
- <?php endif; ?>
-
-<script>
-(function () {
-  function wire(zoneId, inputId, prevId, imgId, maxMB) {
-    const dz = document.getElementById(zoneId); if (!dz) return;
-    const input = document.getElementById(inputId);
-    const prev  = document.getElementById(prevId);
-    const img   = document.getElementById(imgId);
-    const ok = ['image/jpeg','image/png','image/webp'];
-
-    function show(f){
-      if (!ok.includes(f.type)) { alert('Format harus JPG/PNG/WEBP'); return; }
-      if (f.size > maxMB*1024*1024) { alert('Ukuran gambar > '+maxMB+'MB'); return; }
-      const r = new FileReader();
-      r.onload = e => { img.src = e.target.result; prev.style.display='block'; };
-      r.readAsDataURL(f);
-    }
-    dz.addEventListener('click', ()=> input.click());
-    dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
-    dz.addEventListener('dragleave', ()=> dz.classList.remove('drag'));
-    dz.addEventListener('drop', e=>{
-      e.preventDefault(); dz.classList.remove('drag');
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        input.files = e.dataTransfer.files; show(input.files[0]);
-      }
-    });
-    input.addEventListener('change', ()=> input.files[0] && show(input.files[0]));
-  }
-  wire('dz-avatar','avatar','prevA','imgA',2);
-  wire('dz-banner','banner','prevB','imgB',4);
-})();
-</script>
+<?php endif; ?>
 
 <?php require_once __DIR__ . '/_footer.php';

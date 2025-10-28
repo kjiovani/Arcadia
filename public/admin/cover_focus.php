@@ -1,29 +1,27 @@
 <?php
-// /arcadia/public/owner/cover_focus.php
-require_once __DIR__.'/../../config.php';
-require_once __DIR__.'/../../lib/db.php';
-require_once __DIR__.'/../../lib/auth.php'; // supaya bisa pakai require_owner
-if (session_status()===PHP_SESSION_NONE) session_start();
-
-function is_owner(){
-  $me = $_SESSION['user'] ?? null;
-  return $me && strtoupper($me['role']??'')==='OWNER';
-}
-if (!is_owner()){ http_response_code(403); exit('Forbidden'); }
+// /arcadia/public/admin/cover_focus.php
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../lib/db.php';
+require_once __DIR__ . '/../../lib/auth.php';
+require_admin();
+header('Content-Type: text/plain; charset=utf-8');
 
 $table = $_POST['table'] ?? '';
 $id    = (int)($_POST['id'] ?? 0);
-$fx    = max(0,min(100,(int)($_POST['fx'] ?? 50)));
-$fy    = max(0,min(100,(int)($_POST['fy'] ?? 50)));
+$x     = (int)max(0, min(100, (int)($_POST['x'] ?? 50)));
+$y     = (int)max(0, min(100, (int)($_POST['y'] ?? 50)));
+$z     = (int)max(60, min(400, (int)($_POST['z'] ?? 100))); // zoom 60–400%
 
-$allowed = ['games','walkthroughs'];
-if (!in_array($table,$allowed,true) || $id<=0) { http_response_code(400); exit('Bad request'); }
+if ($table !== 'games' || $id <= 0) { http_response_code(400); echo 'Bad request'; exit; }
 
-// pastikan kolom ada; bila belum ada, buat cepat (opsional)
-$mysqli->query("ALTER TABLE `$table` ADD COLUMN IF NOT EXISTS cover_focus_x INT DEFAULT 50");
-$mysqli->query("ALTER TABLE `$table` ADD COLUMN IF NOT EXISTS cover_focus_y INT DEFAULT 50");
+// pastikan kolom ada (MariaDB 10.4+ support IF NOT EXISTS)
+$mysqli->query("ALTER TABLE games ADD COLUMN IF NOT EXISTS cover_focus_x INT DEFAULT 50");
+$mysqli->query("ALTER TABLE games ADD COLUMN IF NOT EXISTS cover_focus_y INT DEFAULT 50");
+$mysqli->query("ALTER TABLE games ADD COLUMN IF NOT EXISTS cover_zoom   INT DEFAULT 100");
 
-$stmt = $mysqli->prepare("UPDATE `$table` SET cover_focus_x=?, cover_focus_y=? WHERE id=?");
-$stmt->bind_param('iii',$fx,$fy,$id);
-$stmt->execute();
-echo $stmt->affected_rows>0 ? "Fokus tersimpan ($fx%, $fy%)." : "Tidak ada perubahan.";
+db_exec($mysqli,
+  "UPDATE games SET cover_focus_x=?, cover_focus_y=?, cover_zoom=? WHERE id=?",
+  [$x, $y, $z, $id], 'iiii'
+);
+
+echo "Tersimpan ($x/$y, zoom $z%)";

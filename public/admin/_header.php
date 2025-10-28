@@ -1,9 +1,15 @@
 <?php
-require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../lib/helpers.php';
-require_once __DIR__ . '/../../lib/auth.php';
-require_once __DIR__ . '/../../lib/db.php';
+// /arcadia/public/admin/_header.php
+
+$ROOT = dirname(__DIR__, 2); // dari /public/admin → /arcadia
+
+require_once $ROOT . '/config.php';
+require_once $ROOT . '/lib/helpers.php';
+require_once $ROOT . '/lib/auth.php';
+require_once $ROOT . '/lib/db.php';
+
 require_admin();
+
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -118,7 +124,69 @@ $P3 = app_setting('brand_color_p3','#7a5cff');   // warna gradient 3
       .sidenav[data-collapsed="true"]{display:none}
       .sidenav[data-collapsed="false"]{display:flex}
     }
+
+    /* ================= Uploader Dropzone (global admin) ================= */
+    .dropzone{
+      border:2px dashed rgba(255,255,255,.22);
+      border-radius:14px;
+      padding:14px;
+      cursor:pointer;
+      background:rgba(255,255,255,.02);
+      transition:.15s ease;
+    }
+    .dropzone:hover{ background:rgba(255,255,255,.04); }
+    .dropzone.is-dragover{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px var(--ring) inset;
+      background:rgba(167,139,250,.06);
+    }
+    .dropzone .hint{ opacity:.75; font-size:.9rem; }
   </style>
+
+  <!-- =============== Uploader Script (aktif untuk semua [data-dropzone]) =============== -->
+  <script defer>
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('[data-dropzone]').forEach(function(zone){
+      var fileInput = zone.querySelector('input[type="file"]');
+      var preview   = zone.querySelector('[data-preview]');
+      var label     = zone.querySelector('[data-label]');
+
+      function setPreview(file){
+        if(!file) return;
+        // hanya preview gambar
+        if (!file.type || file.type.indexOf('image/') !== 0) return;
+        var reader = new FileReader();
+        reader.onload = function(e){
+          if(preview){ preview.src = e.target.result; preview.style.display = 'block'; }
+          if(label){ label.textContent = file.name; }
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Klik area -> buka file dialog (kecuali klik langsung input)
+      zone.addEventListener('click', function(e){
+        if(e.target.tagName !== 'INPUT' && fileInput) fileInput.click();
+      });
+
+      // Drag n drop
+      zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('is-dragover'); });
+      zone.addEventListener('dragleave', function(){ zone.classList.remove('is-dragover'); });
+      zone.addEventListener('drop', function(e){
+        e.preventDefault(); zone.classList.remove('is-dragover');
+        if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0] && fileInput){
+          fileInput.files = e.dataTransfer.files;
+          setPreview(fileInput.files[0]);
+        }
+      });
+
+      if(fileInput){
+        fileInput.addEventListener('change', function(){
+          if(fileInput.files && fileInput.files[0]) setPreview(fileInput.files[0]);
+        });
+      }
+    });
+  });
+  </script>
 </head>
 <body>
 
@@ -147,9 +215,8 @@ $P3 = app_setting('brand_color_p3','#7a5cff');   // warna gradient 3
           <li><a class="nav-link <?= active('/admin/users.php', $path) ?>" href="/arcadia/public/admin/users.php">Akun</a></li>
         <?php endif; ?>
         <?php if ($isOwner): ?>
-  <li><a class="nav-link <?= active('/admin/appearance.php', $path) ?>" href="/arcadia/public/admin/appearance.php">Tampilan</a></li>
-<?php endif; ?>
-
+          <li><a class="nav-link <?= active('/admin/appearance.php', $path) ?>" href="/arcadia/public/admin/appearance.php">Tampilan</a></li>
+        <?php endif; ?>
       </ul>
     </div>
 
