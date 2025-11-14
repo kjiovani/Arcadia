@@ -12,15 +12,23 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $errors = [];
-$next = (string) ($_GET['next'] ?? '');
+
+// ambil raw next dari query string
+$rawNext = (string) ($_GET['next'] ?? '');
 
 function safe_next(string $raw): string
 {
   return ($raw !== '' && strpos($raw, '://') === false && str_starts_with($raw, '/arcadia/public')) ? $raw : '';
 }
 
-// Cek ketersediaan kolom "password" (legacy) sekali saja
-function users_has_col(mysqli $mysqli, string $col): bool
+// next yang sudah disanitasi
+$next = safe_next($rawNext);
+
+// flag: ini login ke panel admin/owner atau bukan
+$isAdminLogin = (strpos($next, '/arcadia/public/admin') === 0);
+
+/* ---------- helper cek kolom users ---------- */
+function users_has_col_login(mysqli $mysqli, string $col): bool
 {
   $row = db_one(
     $mysqli,
@@ -34,15 +42,46 @@ function users_has_col(mysqli $mysqli, string $col): bool
   );
   return (int) ($row['n'] ?? 0) > 0;
 }
-$hasPlain = users_has_col($mysqli, 'password'); // true jika ada kolom plaintext
+
+function users_active_col_login(mysqli $mysqli): ?string
+{
+  foreach (['is_active', 'active', 'status'] as $c) {
+    if (users_has_col_login($mysqli, $c)) {
+      return $c;
+    }
+  }
+  return null;
+}
+
+/**
+ * Konversi nilai status ke boolean "aktif?"
+ * - 1 / "1"
+ * - "active", "aktif", "on", "yes", "true"
+ * selain itu dianggap nonaktif.
+ */
+function user_is_on_login($val): bool
+{
+  if ($val === null) return true;
+  if (is_bool($val)) return $val;
+
+  $v = strtolower(trim((string) $val));
+  if ($v === '') return true;
+  if (is_numeric($v)) return ((int) $v) === 1;
+
+  return in_array($v, ['active', 'aktif', 'on', 'yes', 'y', 'true'], true);
+}
+
+$hasPlain  = users_has_col_login($mysqli, 'password');         // true jika ada kolom plaintext
+$C_ACTIVE  = users_active_col_login($mysqli);                  // nama kolom status aktif (bisa null)
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
     csrf_verify();
 
     $email = str_trim($_POST['email'] ?? '');
-    $pass = (string) ($_POST['password'] ?? '');
-    $next = safe_next((string) ($_POST['next'] ?? $next));
+    $pass  = (string) ($_POST['password'] ?? '');
+    $next  = safe_next((string) ($_POST['next'] ?? $next));
+    $isAdminLogin = (strpos($next, '/arcadia/public/admin') === 0);
 
     if ($email === '')
       throw new Exception('Email wajib diisi.');
@@ -55,6 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $selectCols = 'id,name,email,role,password_hash';
     if ($hasPlain)
       $selectCols .= ',password';
+    if ($C_ACTIVE)
+      $selectCols .= ',' . $C_ACTIVE;
 
     $user = db_one(
       $mysqli,
@@ -65,7 +106,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$user)
       throw new Exception('Email atau password tidak cocok.');
 
-    // Verifikasi: utamakan password_hash; fallback ke kolom legacy bila ada
+    // Jika ada kolom status, cek dulu apakah akun aktif
+    if ($C_ACTIVE && array_key_exists($C_ACTIVE, $user)) {
+      if (!user_is_on_login($user[$C_ACTIVE])) {
+        throw new Exception('Akun kamu sedang dinonaktifkan. Hubungi admin untuk mengaktifkannya kembali.');
+      }
+    }
+
+    // Verifikasi password: utamakan password_hash; fallback ke kolom legacy bila ada
     $ok = false;
     if (!empty($user['password_hash'])) {
       $ok = password_verify($pass, $user['password_hash']);
@@ -82,12 +130,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Set sesi (dua format, agar kompatibel)
     session_regenerate_id(true);
     $_SESSION['user'] = [
-      'id' => (int) $user['id'],
-      'name' => (string) $user['name'],
+      'id'    => (int) $user['id'],
+      'name'  => (string) $user['name'],
       'email' => (string) $user['email'],
-      'role' => (string) ($user['role'] ?? 'USER'),
+      'role'  => (string) ($user['role'] ?? 'USER'),
     ];
-    $_SESSION['user_id'] = (int) $user['id'];
+    $_SESSION['user_id']   = (int) $user['id'];
     $_SESSION['user_role'] = (string) ($user['role'] ?? 'USER');
 
     header('Location: ' . ($next ?: '/arcadia/public/index.php'));
@@ -164,16 +212,22 @@ include __DIR__ . '/../_header.php';
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    border: 1px solid rgba(255, 255, 255, .12);
-    background: rgba(255, 255, 255, .06);
-    padding: .35rem .55rem;
+    padding: .35rem .7rem;
     border-radius: 10px;
     cursor: pointer;
-    font-size: .9rem
+    font-size: .9rem;
+    border: 1px solid var(--primary);
+    background: rgba(167, 139, 250, .2);
+    color: #f5f3ff;
+    font-weight: 600;
   }
 
-  .pw-toggle:hover {
-    background: rgba(255, 255, 255, .10)
+  .pw-toggle:hover,
+  .pw-toggle:focus-visible {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #0f0f16;
+    box-shadow: 0 6px 16px var(--ring);
   }
 
   .row {
@@ -205,14 +259,17 @@ include __DIR__ . '/../_header.php';
   <div class="auth-card">
     <div class="auth-head">
       <div class="auth-logo">⟡</div>
-      <h1 style="margin:0">Masuk</h1>
+      <h1><?= $isAdminLogin ? 'Masuk Sebagai Admin/Owner' : 'Masuk' ?></h1>
     </div>
-    <p class="auth-sub">Selamat datang kembali! Lanjutkan progres dan jelajahi panduan favoritmu.</p>
+    <p class="auth-sub">
+      <?= $isAdminLogin ? 'Masuk ke panel Admin/Owner Arcadia.' : 'Masuk untuk melanjutkan panduanmu.' ?>
+    </p>
 
     <?php if (!empty($errors)): ?>
       <div class="alert error">
         <?php foreach ($errors as $e): ?>
-          <div><?= e($e) ?></div><?php endforeach; ?>
+          <div><?= e($e) ?></div>
+        <?php endforeach; ?>
       </div>
     <?php endif; ?>
 
@@ -234,9 +291,12 @@ include __DIR__ . '/../_header.php';
             <button type="button" class="pw-toggle" id="btnShowPw" aria-label="Tampilkan password">Lihat</button>
           </div>
           <div class="row">
-            <span class="hint">Tip: password kuat berisi huruf besar, angka, & simbol.</span>
-            <a class="hint" style="color:inherit;text-decoration:underline"
-              href="/arcadia/public/auth/register.php<?= $next ? ('?next=' . urlencode($next)) : '' ?>">Daftar akun</a>
+            <span class="hint">Tip: gunakan huruf, angka, dan simbol.</span>
+
+            <?php if (!$isAdminLogin): ?>
+              <a class="hint" style="color:inherit;text-decoration:underline"
+                href="/arcadia/public/auth/register.php<?= $next ? ('?next=' . urlencode($next)) : '' ?>">Daftar akun</a>
+            <?php endif; ?>
           </div>
         </div>
 

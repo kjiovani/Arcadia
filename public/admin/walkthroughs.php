@@ -14,7 +14,7 @@ require_once __DIR__ . '/../../lib/csrf.php';
 require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/validation.php';
 
-$action = $_GET['action'] ?? 'list';
+$action = $_POST['action'] ?? ($_GET['action'] ?? 'list');
 
 // Verifikasi CSRF untuk semua POST (token sudah ada karena session aktif)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -252,8 +252,10 @@ if ($action === 'edit') {
 } else { ?>
   <div class="card">
     <h2>Tambah</h2>
-    <form method="post" action="walkthroughs.php?action=create" class="grid">
-      <?php csrf_field(); ?>
+    <form method="post" action="walkthroughs.php" class="grid">
+  <?php csrf_field(); ?>
+  <input type="hidden" name="action" value="create">
+
 
       <label>Game
         <select name="game_id">

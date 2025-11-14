@@ -61,7 +61,22 @@ $APP_LOGO = app_setting('site_logo_url', '');     // URL logo (opsional)
 $P1 = app_setting('brand_color_p1', '#c9b3ff');   // warna gradient 1
 $P2 = app_setting('brand_color_p2', '#9a78ff');   // warna gradient 2
 $P3 = app_setting('brand_color_p3', '#7a5cff');   // warna gradient 3
+?>  
+
+<?php
+// ... require_once config, helpers, dll di atas sini ...
+
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+$me   = $_SESSION['user'] ?? null;
+$role = strtolower($me['role'] ?? 'owner');
+
+// judul brand di sidebar: Admin Arcadia / Owner Arcadia
+$brandTitle = ($role === 'admin') ? 'Admin Arcadia' : 'Owner Arcadia';
 ?>
+
 <!doctype html>
 <html lang="id">
 
@@ -419,10 +434,10 @@ $P3 = app_setting('brand_color_p3', '#7a5cff');   // warna gradient 3
       <div class="brand">
         <?php if ($APP_LOGO): ?>
           <img src="<?= e($APP_LOGO) ?>" alt="Logo" style="height:28px;width:auto;display:block">
-          <div>Owner Arcadia</div>
+          <div><?= e($brandTitle) ?></div>
         <?php else: ?>
           <div class="brand-badge">⟡</div>
-          <div>Owner Arcadia</div>
+          <div><?= e($brandTitle) ?></div>
         <?php endif; ?>
       </div>
 

@@ -155,17 +155,26 @@ include __DIR__ . '/../_header.php';
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    border: 1px solid rgba(255, 255, 255, .12);
-    background: rgba(255, 255, 255, .06);
-    padding: .35rem .55rem;
+    padding: .35rem .7rem;
     border-radius: 10px;
     cursor: pointer;
-    font-size: .9rem
+    font-size: .9rem;
+
+    /* warna baru biar lebih kelihatan */
+    border: 1px solid var(--primary);
+    background: rgba(167, 139, 250, .2);
+    color: #f5f3ff;
+    font-weight: 600;
   }
 
-  .pw-toggle:hover {
-    background: rgba(255, 255, 255, .10)
+  .pw-toggle:hover,
+  .pw-toggle:focus-visible {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #0f0f16;
+    box-shadow: 0 6px 16px var(--ring);
   }
+
 
   .pw-meter {
     height: 8px;

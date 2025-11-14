@@ -9,14 +9,15 @@ $gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
     . '&to=' . urlencode($ownerEmail)
     . '&su=' . urlencode('Pengajuan Admin Arcadia')
     . '&body=' . urlencode(
-    "Hallo Admin Owner Arcadia,
+    "Halo Owner Arcadia,
 
-Saya ingin mengajukan diri sebagai Admin.
+Saya ingin mendaftar sebagai Admin Arcadia.
 
+Berikut data singkat saya:
 Nama:
 Email:
-Portofolio (opsional):
-Alasan singkat:
+Akun / portofolio (opsional):
+Alasan ingin jadi admin:
 
 Terima kasih."
 );
@@ -77,6 +78,28 @@ Terima kasih."
         font-size: .95rem;
         margin-top: .4rem;
     }
+
+    /* === Highlight tombol Daftar Admin (ghost) supaya tidak terlalu gelap === */
+    .admin-cta .btn.ghost {
+        background: rgba(167, 139, 250, .16);
+        border-color: var(--primary);
+        color: #f5f3ff;
+        font-weight: 600;
+    }
+
+    .admin-cta .btn.ghost:hover,
+    .admin-cta .btn.ghost:focus-visible {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #0f0f16;
+        box-shadow: 0 8px 22px var(--ring);
+        transform: translateY(-1px);
+    }
+
+    .admin-cta .btn.ghost:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px var(--ring);
+    }
 </style>
 
 <div class="container card" style="max-width:960px">
@@ -84,7 +107,7 @@ Terima kasih."
     <!-- Judul tengah -->
     <div class="admin-hero">
         <h1>Admin Arcadia</h1>
-        <div class="sub">Info singkat dan langkah mendaftar admin.</div>
+        <div class="sub">Info singkat untuk calon admin.</div>
     </div>
 
     <!-- Tiga poin ringkas -->
@@ -92,23 +115,23 @@ Terima kasih."
         <div class="admin-card">
             <h3>Peran</h3>
             <p class="small">
-                Admin membantu menjaga kualitas panduan: menambah, mengedit, dan merapikan konten.
+                Admin menjaga kualitas dan kerapian panduan.
             </p>
         </div>
         <div class="admin-card">
             <h3>Syarat Singkat</h3>
             <ul class="small" style="margin:.25rem 0 0 1rem">
-                <li>Suka game & menulis ringkas.</li>
-                <li>Rapi, komunikatif, bertanggung jawab.</li>
-                <li>Dasar HTML/Markdown nilai plus.</li>
+                <li>Suka game & menulis.</li>
+                <li>Teliti dan komunikatif.</li>
+                <li>Dasar HTML/Markdown (opsional).</li>
             </ul>
         </div>
         <div class="admin-card">
             <h3>Tugas Inti Admin</h3>
             <ul class="small" style="margin:.25rem 0 0 1rem">
-                <li>Menyusun walkthrough yang ringkas & mudah diikuti.</li>
-                <li>Merapikan chapter (struktur, judul, urutan).</li>
-                <li>Meninjau masukan pengguna dan memperbarui panduan.</li>
+                <li>Menambah dan mengedit walkthrough.</li>
+                <li>Merapikan struktur chapter.</li>
+                <li>Merespon masukan dan update panduan.</li>
             </ul>
         </div>
 
@@ -118,7 +141,7 @@ Terima kasih."
     <div class="card" style="margin:1rem 0; text-align:center">
         <h2 style="margin:.2rem 0 0">Tertarik jadi admin?</h2>
         <p class="small" style="margin:.25rem 0 .8rem">
-            Kirim pengajuan singkat—Admin Owner akan meninjau dan, bila disetujui, membuatkan akun untukmu.
+            Kirim pengajuan singkat. Admin Owner akan cek dan membuat akun jika disetujui.
         </p>
         <div class="admin-cta">
             <a class="btn" href="/arcadia/public/auth/login.php?next=/arcadia/public/admin/">Login Admin</a>
@@ -129,4 +152,3 @@ Terima kasih."
 
 </div>
 
-<?php include __DIR__ . '/_footer.php'; ?>

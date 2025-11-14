@@ -78,15 +78,13 @@ $chaptersCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM chapters")['c'] 
 
 <div class="card about-hero" style="padding:28px">
   <span class="badge">Tentang</span>
-  <h1>Arcadia — Pusat panduan game yang rapi, cepat, dan enak dibaca.</h1>
+  <h1>Arcadia — Panduan game rapi dan cepat.</h1>
   <p>
-    Arcadia menyusun konten <strong>Game → Walkthrough → Chapter</strong> dengan navigasi yang konsisten,
-    fokus pada langkah inti, dan aman untuk diubah-ubah oleh kontributor.
+    Arcadia menyusun konten <strong>Game → Walkthrough → Chapter</strong> agar kamu mudah mengikuti langkah permainan.
   </p>
 
   <div style="display:flex;gap:12px;margin:16px 0 6px">
     <a class="btn" href="/arcadia/public/index.php">Jelajahi Panduan</a>
-    <!-- Tombol admin dihilangkan -->
   </div>
 
   <div class="about-kpi">
@@ -104,41 +102,35 @@ $chaptersCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM chapters")['c'] 
     </div>
   </div>
 
-  <div class="stack">
-    <span class="badge" style="background:rgba(255,255,255,.08)">PHP</span>
-    <span class="badge" style="background:rgba(255,255,255,.08)">MySQL</span>
-    <span class="badge" style="background:rgba(255,255,255,.08)">HTML</span>
-    <span class="badge" style="background:rgba(255,255,255,.08)">CSS</span>
-    <span class="badge" style="background:rgba(255,255,255,.08)">JavaScript</span>
-  </div>
+  
 </div>
 
 <div class="card" style="padding:24px">
   <h2 style="margin-bottom:.75rem">Kenapa Arcadia?</h2>
   <div class="about-grid">
     <div class="card">
-      <h3>Navigasi terstruktur</h3>
-      <p>Hierarki jelas dari game hingga chapter. Anti nyasar dan mudah kembali ke konteks.</p>
+      <h3>Gampang Cari Jalan</h3>
+      <p>Dari daftar game sampai chapter terakhir, alurnya jelas dan mudah diikuti.</p>
     </div>
     <div class="card">
-      <h3>Konten ringkas</h3>
-      <p>Langkah-langkah fokus, minim spoiler. Teks dibatasi lebar baca agar nyaman di mata.</p>
+      <h3>Penjelasan Singkat & Jelas</h3>
+      <p>Langsung ke langkah penting tanpa paragraf panjang dan ribet.</p>
     </div>
     <div class="card">
-      <h3>Pencarian cepat</h3>
-      <p>Cari boss, lokasi, atau tips dalam hitungan detik dari seluruh walkthrough.</p>
+      <h3>Bantu Saat Lagi Stuck</h3>
+      <p>Cari boss, misi, atau lokasi—dapat solusi dalam beberapa detik.</p>
     </div>
     <div class="card">
-      <h3>Keamanan bawaan</h3>
-      <p>Prepared statements, token CSRF, validasi input, dan sanitasi output dengan <code>e()</code>.</p>
+      <h3>Nyaman Dipakai Lama</h3>
+      <p>Tampilan gelap, rapi, dan enak dibaca sambil main game.</p>
     </div>
     <div class="card">
-      <h3>Kinerja ringan</h3>
-      <p>Tidak bergantung framework berat. Halaman cepat dimuat bahkan di jaringan pas-pasan.</p>
+      <h3>Tetap Ringan</h3>
+      <p>Halaman dibuat sederhana supaya tetap cepat meski koneksi biasa saja.</p>
     </div>
     <div class="card">
-      <h3>Peran & Moderasi</h3>
-      <p>Admin mengelola konten, komentar dengan status, serta aksi edit/hapus yang aman.</p>
+      <h3>Komentar Lebih Terjaga</h3>
+      <p>Admin memantau komentar supaya diskusi tetap rapi dan sopan.</p>
     </div>
   </div>
 </div>
@@ -148,15 +140,15 @@ $chaptersCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM chapters")['c'] 
   <div class="about-steps">
     <div class="step">
       <span class="badge">1</span>
-      <div><strong>Pilih Game</strong><br>Mulai dari daftar game untuk melihat ringkasan & gambar.</div>
+      <div><strong>Pilih Game</strong><br>Pilih dari daftar game yang tersedia.</div>
     </div>
     <div class="step">
       <span class="badge">2</span>
-      <div><strong>Buka Walkthrough</strong><br>Baca ikhtisar, tingkat kesulitan, lalu lanjut ke chapter.</div>
+      <div><strong>Buka Walkthrough</strong><br>Lihat ringkasan dan tingkat kesulitan.</div>
     </div>
     <div class="step">
       <span class="badge">3</span>
-      <div><strong>Ikuti Chapter</strong><br>Ikuti langkah per langkah. Pakai komentar untuk berbagi tips.</div>
+      <div><strong>Ikuti Chapter</strong><br>Ikuti langkahnya dan baca komentar untuk tips.</div>
     </div>
   </div>
 </div>
@@ -165,26 +157,25 @@ $chaptersCount = (int) (db_one($mysqli, "SELECT COUNT(*) c FROM chapters")['c'] 
   <h2 style="margin-bottom:.75rem">Tanya jawab singkat</h2>
   <div class="faq">
     <div class="card">
-      <div class="q">Apakah saya perlu login?</div>
-      <div>Melihat konten bebas. Login diperlukan untuk menulis komentar atau mengelola konten.</div>
+      <div class="q">Siapa saja yang bisa pakai Arcadia?</div>
+      <div>Siapa pun yang main game dan butuh panduan: pemain baru, yang lagi stuck, sampai yang cuma mau cek ulang langkah.</div>
     </div>
     <div class="card">
-      <div class="q">Bagaimana menjaga komentar tetap rapi?</div>
-      <div>Sistem otomatis merapikan baris tunggal/berulang (anti “turun tangga”) dan mencegah spam.</div>
+      <div class="q">Kapan sebaiknya saya buka Arcadia?</div>
+      <div>Saat kamu bingung di satu misi, lupa langkah, atau mau lihat gambaran dulu sebelum mulai game baru.</div>
     </div>
     <div class="card">
-      <div class="q">Bisa dipakai di server sekolah/lokal?</div>
-      <div>Bisa. Arcadia ringan, hanya butuh PHP + MySQL. Cukup impor database dan atur <code>config.php</code>.</div>
+      <div class="q">Apakah saya boleh berbagi tips sendiri?</div>
+      <div>Boleh. Kamu bisa menuliskan pengalaman atau trik di kolom komentar, selama tetap sopan dan membantu pemain lain.</div>
     </div>
   </div>
 </div>
 
 <div class="card" style="padding:24px">
   <h2 style="margin-bottom:.75rem">Kontribusi & Kontak</h2>
-  <p>Kamu menemukan bug atau ingin usul fitur? Silakan tinggalkan masukan via komentar atau hubungi admin.</p>
+  <p>Kalau menemukan bug atau punya ide fitur, tinggalkan komentar atau hubungi admin.</p>
   <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
     <a class="btn" href="/arcadia/public/index.php">Mulai jelajahi</a>
-    <!-- Tombol "Masuk ke panel" dihilangkan -->
   </div>
 </div>
 

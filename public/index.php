@@ -6,6 +6,16 @@ require_once __DIR__ . '/../lib/auth_user.php';
 // settings.php opsional; kita pakai helper lokal di bawah
 include __DIR__ . '/_header.php';
 
+
+
+// === cek role user (ADMIN / OWNER / USER) ===
+$currentUser = current_user();
+$isAdminOrOwner = false;
+if ($currentUser) {
+  $role = strtoupper((string)($currentUser['role'] ?? 'USER'));
+  $isAdminOrOwner = in_array($role, ['ADMIN', 'OWNER'], true);
+}
+
 if (!function_exists('e')) {
   function e($s)
   {
@@ -162,6 +172,13 @@ $logo_games = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_games', ''));
 $logo_feat = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_featured', ''));
 $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', ''));
 ?>
+
+<?php if ($msg = flash('ok')): ?>
+  <div class="alert-banner">
+    <?= e($msg) ?>
+  </div>
+<?php endif; ?>
+
 <style>
   .grid-upd {
     display: grid;
@@ -311,11 +328,6 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
     --game-thumb: 102px;
   }
 
-  /* samakan dengan ukuran kotak + di bawah */
-
-
-  /* samakan dengan ukuran kotak “+” kamu */
-
   #games .game-thumbbox {
     width: var(--game-thumb);
     height: var(--game-thumb);
@@ -354,6 +366,19 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
       --game-thumb: 96px;
     }
   }
+
+  .alert-banner {
+    max-width: 1120px;
+    margin: 18px auto 0;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(16,185,129,.14);
+    border: 1px solid rgba(16,185,129,.40);
+    color: #dcfce7;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 10px 24px rgba(0,0,0,.25);
+  }
 </style>
 
 <!-- (1) Hero -->
@@ -377,16 +402,20 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
         decoding="async" onerror="this.remove()"><?php endif; ?>Daftar Game</h1>
   <p class="small">Pilih game untuk melihat walkthrough.</p>
 
-  <?php $gamesLimited = array_slice($games, 0, 4);
-  $needFill = max(0, 4 - count($gamesLimited)); ?>
+  <?php
+  $gamesLimited = array_slice($games, 0, 4);
+  $needFill = max(0, 4 - count($gamesLimited));
+  ?>
   <div class="games-grid">
     <?php foreach ($gamesLimited as $g): ?>
       <div class="game-item v2">
         <div class="game-thumbbox">
           <div class="cover-frame">
             <?php if (!empty($g['image_url'])): ?>
-              <?php $fx = (int) ($g['cover_focus_x'] ?? 50);
-              $fy = (int) ($g['cover_focus_y'] ?? 50); ?>
+              <?php
+              $fx = (int) ($g['cover_focus_x'] ?? 50);
+              $fy = (int) ($g['cover_focus_y'] ?? 50);
+              ?>
               <img src="<?= e($g['image_url']) ?>" alt="<?= e($g['title']) ?>"
                 style="object-fit:cover;object-position:<?= $fx ?>% <?= $fy ?>%;">
             <?php else: ?>
@@ -394,8 +423,6 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
             <?php endif; ?>
           </div>
         </div>
-
-
 
         <div class="game-meta">
           <div class="title-row">
@@ -405,27 +432,35 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
           <p class="desc clamp-2"><?= e($g['excerpt']) ?>…</p>
         </div>
 
-        <?php $detailUrl = '/arcadia/public/game.php?id=' . $g['id'];
+        <?php
+        $detailUrl = '/arcadia/public/game.php?id=' . $g['id'];
         if (!is_user_logged_in()) {
           $detailUrl = '/arcadia/public/auth/login.php?next=' . urlencode($detailUrl);
-        } ?>
+        }
+        ?>
         <div class="game-actions"><a class="btn ghost" href="<?= e($detailUrl) ?>">Lihat Detail</a></div>
       </div>
     <?php endforeach; ?>
 
-    <?php for ($i = 0; $i < $needFill; $i++): ?>
-      <div class="game-item v2 placeholder">
-        <div class="placeholder-thumb big" data-initial="+"></div>
-        <div class="game-meta">
-          <div class="title-row">
-            <h3>Tambahkan Game</h3>
+    <?php if ($isAdminOrOwner): ?>
+      <?php for ($i = 0; $i < $needFill; $i++): ?>
+        <div class="game-item v2 placeholder">
+          <div class="placeholder-thumb big" data-initial="+"></div>
+          <div class="game-meta">
+            <div class="title-row">
+              <h3>Tambahkan Game</h3>
+            </div>
+            <p class="small">Belum ada data di slot ini. Isi dari panel Admin.</p>
           </div>
-          <p class="small">Belum ada data di slot ini. Isi dari panel Admin.</p>
+          <div class="game-actions"><a class="btn" href="/arcadia/public/admin/games.php">+ Tambah Game</a></div>
         </div>
-        <div class="game-actions"><a class="btn" href="/arcadia/public/admin/games.php">+ Tambah Game</a></div>
-      </div>
-    <?php endfor; ?>
+      <?php endfor; ?>
+    <?php endif; ?>
   </div>
+
+  <?php if (!$gamesLimited && !$isAdminOrOwner): ?>
+    <p class="small" style="margin-top:.75rem">Belum ada game yang dapat ditampilkan.</p>
+  <?php endif; ?>
 
   <div class="more-wrap"><a class="btn btn-pill btn-more-logout"
       href="/arcadia/public/games.php"><span>Lainnya</span></a></div>
@@ -434,8 +469,8 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
 <!-- (3) Panduan Unggulan -->
 <section class="section card">
   <h2 style="margin-bottom:.25rem"><?php if ($logo_feat): ?><img class="title-logo" src="<?= e($logo_feat) ?>" alt=""
-        loading="lazy" decoding="async" onerror="this.remove()"><?php endif; ?>Panduan Unggulan</h2>
-  <p class="small" style="margin:.15rem 0 1rem">Pilihan terbaru/terbaik dari Arcadia.</p>
+        loading="lazy" decoding="async" onerror="this.remove()"><?php endif; ?>Walkthrough Unggulan</h2>
+  <p class="small" style="margin:.15rem 0 1rem">Pilihan terbaik dari Arcadia.</p>
 
   <?php $feat4 = array_slice($featured ?? [], 0, 6); ?>
   <?php if (!$feat4): ?>
@@ -449,8 +484,10 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
             <article class="feat4-card">
               <div class="feat4-thumb cover-frame">
                 <?php if (!empty($f['game_image'])): ?>
-                  <?php $fx = (int) ($f['g_fx'] ?? 50);
-                  $fy = (int) ($f['g_fy'] ?? 50); ?>
+                  <?php
+                  $fx = (int) ($f['g_fx'] ?? 50);
+                  $fy = (int) ($f['g_fy'] ?? 50);
+                  ?>
                   <img class="cover-adjustable" data-table="games" data-id="<?= (int) $f['game_id'] ?>"
                     src="<?= e($f['game_image']) ?>" alt="<?= e($f['game']) ?>"
                     style="width:100%;height:100%;object-fit:cover;object-position:<?= $fx ?>% <?= $fy ?>%">
@@ -466,10 +503,12 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
                 <div class="feat4-meta">🎮 <a href="game.php?id=<?= (int) $f['game_id'] ?>" class="small"
                     style="color:inherit;text-decoration:none"><?= e($f['game']) ?></a></div>
                 <p class="feat4-desc clamp-2"><?= e(mb_strimwidth($f['excerpt'] ?? '', 0, 160, '…', 'UTF-8')) ?></p>
-                <?php $openUrl = '/arcadia/public/walkthrough.php?id=' . (int) $f['id'];
+                <?php
+                $openUrl = '/arcadia/public/walkthrough.php?id=' . (int) $f['id'];
                 if (!is_user_logged_in()) {
                   $openUrl = '/arcadia/public/auth/login.php?next=' . urlencode($openUrl);
-                } ?>
+                }
+                ?>
                 <div class="feat4-actions"><a class="btn" href="<?= e($openUrl) ?>">Buka Panduan</a></div>
               </div>
             </article>
@@ -483,7 +522,7 @@ $logo_recent = arc_norm_icon(arc_setting_get($mysqli, 'logo_section_recent', '')
 <!-- (4) Baru Diupdate ✨ -->
 <section class="section card">
   <h2 style="margin-bottom:.25rem"><?php if ($logo_recent): ?><img class="title-logo" src="<?= e($logo_recent) ?>"
-        alt="" loading="lazy" decoding="async" onerror="this.remove()"><?php endif; ?>Baru Diupdate ✨</h2>
+        alt="" loading="lazy" decoding="async" onerror="this.remove()"><?php endif; ?>Baru Diupdate</h2>
   <p class="small" style="margin:.15rem 0 1rem">Walkthrough yang baru dibuat/diubah.</p>
 
   <?php if (!$recentWalks): ?>

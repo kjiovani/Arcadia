@@ -66,6 +66,33 @@ echo
 .c-mi.danger{color:#ff6b6b; font-weight:700;}
 .c-mi.danger:hover, .c-mi.danger:focus-visible{background:rgba(255, 107, 107, .14); color:#ff8080;}
 .c-del{margin:0}
+/* Thumbnail kecil di kartu walkthrough */
+.wt-thumb-wrap {
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
+  background: #111827;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+}
+
+.wt-thumb {
+  width: 100%;
+  height: 190px;        /* atur tinggi di sini, boleh 160–220px */
+  object-fit: cover;    /* supaya cover penuh tapi tetap crop rapi */
+  display: block;
+}
+
+.wt-thumb-fallback {
+  width: 100%;
+  height: 190px;        /* samakan dengan .wt-thumb */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #c4b5fd;
+  background: linear-gradient(180deg, #1f2937, #020617);
+}
+
 </style>';
 
 if (!$game) {
@@ -137,19 +164,17 @@ if (!$walks) {
     echo '<article class="w-item">';
 
     // thumb
-    echo '<div class="w-thumb">';
-    if (!empty($w['cover_url'])) {
-      echo '<img class="cover-adjustable"
-                   data-table="walkthroughs"
-                   data-id="' . (int) $w['id'] . '"
-                   src="' . e($w['cover_url']) . '"
-                   alt="' . e($w['title']) . '"
-                   style="object-position:' . $fx . '% ' . $fy . '%">';
-    } else {
-      $initial = mb_strtoupper(mb_substr($w['title'] ?: "?", 0, 1));
-      echo '<div class="w-fallback" aria-hidden="true">' . e($initial) . '</div>';
-    }
-    echo '</div>';
+    echo '<div class="wt-thumb-wrap">';
+if (!empty($game['image_url'])) {
+    echo '<img class="wt-thumb"
+               src="' . e($game['image_url']) . '"
+               alt="' . e($game['title']) . '">';
+} else {
+    $initial = mb_strtoupper(mb_substr($w['title'] ?: "?", 0, 1));
+    echo '<div class="wt-thumb-fallback">' . e($initial) . '</div>';
+}
+echo '</div>';
+
 
     // title + badge
     echo '<h3 class="w-title">' . e($w['title']) . ' <span class="badge">' . e($w['difficulty']) . '</span></h3>';

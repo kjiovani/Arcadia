@@ -27,7 +27,9 @@ function users_has_col(string $col): bool
 }
 function col_active()
 {
-  return users_has_col('is_active') ? 'is_active' : (users_has_col('active') ? 'active' : (users_has_col('status') ? 'status' : null));
+  return users_has_col('is_active') ? 'is_active'
+    : (users_has_col('active') ? 'active'
+      : (users_has_col('status') ? 'status' : null));
 }
 function col_created()
 {
@@ -50,14 +52,39 @@ $C_ACTIVE = col_active();
 $C_CREATED = col_created();
 $C_LASTLOG = col_lastlogin();
 
+/* ---------- info user yang sedang login ---------- */
+$me = function_exists('current_user') ? current_user() : ($_SESSION['user'] ?? []);
+$myId   = (int)($me['id'] ?? 0);
+$myRole = strtoupper($me['role'] ?? 'USER');
+
 /* ---------- helpers badge/format ---------- */
+
+/**
+ * Konversi nilai kolom status ke boolean "aktif?"
+ * Support:
+ * - 1 / "1"
+ * - "active", "aktif", "on", "yes", "true"
+ * Selain itu dianggap nonaktif.
+ */
+function user_is_on($val): bool
+{
+  if ($val === null) return true;
+  if (is_bool($val)) return $val;
+
+  $v = strtolower(trim((string)$val));
+  if ($v === '') return true;
+  if (is_numeric($v)) return ((int)$v) === 1;
+
+  return in_array($v, ['active', 'aktif', 'on', 'yes', 'y', 'true'], true);
+}
+
 function badge_role(string $role): string
 {
   return '<span class="badge badge--role">' . e(strtoupper($role)) . '</span>';
 }
 function badge_status(array $row, ?string $C_ACTIVE): string
 {
-  $on = $C_ACTIVE ? (int) ($row[$C_ACTIVE] ?? 1) === 1 : true;
+  $on = $C_ACTIVE ? user_is_on($row[$C_ACTIVE] ?? null) : true;
   return '<span class="badge ' . ($on ? 'badge--ok' : 'badge--off') . '">' . ($on ? 'Aktif' : 'Nonaktif') . '</span>';
 }
 function fmt_dt($s): string
@@ -103,7 +130,12 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
       $types .= 's';
     }
 
-    db_exec($mysqli, "INSERT INTO users(" . implode(',', $cols) . ") VALUES(" . str_repeat('?,', count($cols) - 1) . "?)", $vals, $types);
+    db_exec(
+      $mysqli,
+      "INSERT INTO users(" . implode(',', $cols) . ") VALUES(" . str_repeat('?,', count($cols) - 1) . "?)",
+      $vals,
+      $types
+    );
     flash('ok', 'Akun baru berhasil dibuat.');
     redirect('users.php');
   } catch (Exception $e) {
@@ -161,12 +193,67 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'toggle' && isset($_GET['id'])) {
   if ($C_ACTIVE) {
     $id = (int) $_GET['id'];
-    $row = db_one($mysqli, "SELECT {$C_ACTIVE} AS onx FROM users WHERE id=?", [$id], 'i');
-    $cur = (int) ($row['onx'] ?? 0);
-    db_exec($mysqli, "UPDATE users SET {$C_ACTIVE}=? WHERE id=?", [$cur ? 0 : 1, $id], 'ii');
+
+    // cegah ubah status akun sendiri via toggle
+    if ($id === $myId) {
+      flash('err', 'Kamu tidak bisa mengubah status akunmu sendiri di sini.');
+      redirect('users.php');
+    }
+
+    // ambil value sekarang
+    $row = db_one(
+      $mysqli,
+      "SELECT {$C_ACTIVE} AS onx, role FROM users WHERE id=?",
+      [$id],
+      'i'
+    );
+
+    if ($row) {
+      // jangan nonaktifkan OWNER
+      if (strcasecmp($row['role'] ?? '', 'OWNER') === 0 && user_is_on($row['onx'] ?? null)) {
+        flash('err', 'Akun OWNER tidak boleh dinonaktifkan.');
+        redirect('users.php');
+      }
+
+      $raw   = $row['onx'] ?? null;
+      $curOn = user_is_on($raw);
+
+      // siapkan nilai baru sambil menjaga tipe data kolom
+      if ($raw === null || $raw === '' || is_numeric($raw)) {
+        // kolom numerik (0 / 1)
+        $new = $curOn ? 0 : 1;
+        db_exec($mysqli, "UPDATE users SET {$C_ACTIVE}=? WHERE id=?", [$new, $id], 'ii');
+      } else {
+        // kolom teks (misal: 'active' / 'inactive', 'Aktif' / 'Nonaktif')
+        $low = strtolower(trim((string)$raw));
+        if ($curOn) {
+          // dari aktif -> nonaktif
+          if (in_array($low, ['aktif', 'nonaktif'], true)) {
+            $new = 'nonaktif';
+          } elseif (in_array($low, ['active', 'inactive'], true)) {
+            $new = 'inactive';
+          } else {
+            $new = '0';
+          }
+        } else {
+          // dari nonaktif -> aktif
+          if (in_array($low, ['aktif', 'nonaktif'], true)) {
+            $new = 'aktif';
+          } elseif (in_array($low, ['active', 'inactive'], true)) {
+            $new = 'active';
+          } else {
+            $new = '1';
+          }
+        }
+        db_exec($mysqli, "UPDATE users SET {$C_ACTIVE}=? WHERE id=?", [$new, $id], 'si');
+      }
+
+      flash('ok', $curOn ? 'Akun dinonaktifkan.' : 'Akun diaktifkan.');
+    }
   }
   redirect('users.php');
 }
+
 if ($action === 'resetpw' && isset($_GET['id'])) {
   $id = (int) $_GET['id'];
   $pwd = bin2hex(random_bytes(3)); // 6 hex chars
@@ -534,7 +621,7 @@ if ($action === 'edit' && isset($_GET['id'])) {
           <input class="input" name="password" type="password" placeholder="kosongkan bila tidak ganti">
         </label>
         <label class="field" style="grid-column:1 / -1">
-          <input type="checkbox" name="is_active" <?= ($C_ACTIVE && (int) ($u['active_flag'] ?? 1) === 1) ? 'checked' : ''; ?>>
+          <input type="checkbox" name="is_active" <?= ($C_ACTIVE && user_is_on($u['active_flag'] ?? 1)) ? 'checked' : ''; ?>>
           Aktif
         </label>
         <div style="grid-column:1 / -1;display:flex;gap:10px;justify-content:flex-end">
@@ -573,7 +660,7 @@ function render_group(string $title, array $rows, $C_ACTIVE, $C_CREATED, $C_LAST
           <?php $no = 1;
           foreach ($rows as $r):
             $id = (int) $r['id'];
-            $on = $C_ACTIVE ? (int) ($r[$C_ACTIVE] ?? 1) === 1 : true; ?>
+            $on = $C_ACTIVE ? user_is_on($r[$C_ACTIVE] ?? null) : true; ?>
             <tr>
               <td class="cell-no"><span class="badge-no"><?= $no++ ?></span></td>
               <td><?= e($r['name'] ?? '-') ?></td>

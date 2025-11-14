@@ -5,8 +5,31 @@ require_once __DIR__ . '/../lib/helpers.php';
 include __DIR__ . '/_header.php';
 
 $q = trim($_GET['q'] ?? '');
+$activeGenre = trim($_GET['genre'] ?? '');
+
+/* ------- Kategori game (genre) dari DB ------- */
+$rawGenres = db_all(
+  $mysqli,
+  "SELECT DISTINCT genre FROM games
+   WHERE genre IS NOT NULL AND TRIM(genre) <> ''
+   ORDER BY genre ASC"
+);
+
+$genreNames = [];
+foreach ($rawGenres as $g) {
+  $genre = trim((string) ($g['genre'] ?? ''));
+  if ($genre !== '' && !in_array($genre, $genreNames, true)) {
+    $genreNames[] = $genre;
+  }
+}
+
+/* fallback kalau belum ada data genre di DB */
+if (!$genreNames) {
+  $genreNames = ['Action', 'Adventure', 'RPG', 'Strategy', 'Puzzle', 'Horror'];
+}
 
 /* ------- Hot keywords (14 hari) ------- */
+/* Masih dihitung, tapi tidak lagi ditampilkan di UI */
 $hot = db_all(
   $mysqli,
   "SELECT keyword, COUNT(*) n
@@ -31,27 +54,48 @@ $suggestions = array_slice(array_values($pool), 0, 40);
 
 /* ------- Query hasil ------- */
 $rows = [];
-if ($q !== '') {
-  $like = '%' . $q . '%';
-  // log pencarian
-  db_exec($mysqli, "INSERT INTO searchlogs(keyword, searched_at) VALUES(?, NOW())", [$q]);
+$hasFilter = ($q !== '' || $activeGenre !== '');
 
-  $rows = db_all(
-    $mysqli,
-    "
+if ($hasFilter) {
+  $like = $q !== '' ? '%' . $q . '%' : '%';
+
+  // log pencarian hanya kalau ada kata kunci
+  if ($q !== '') {
+    db_exec($mysqli, "INSERT INTO searchlogs(keyword, searched_at) VALUES(?, NOW())", [$q]);
+  }
+
+  $sql = "
     SELECT 'game' AS type, g.id, g.title, g.platform AS extra, g.image_url AS img, NULL AS difficulty, LEFT(g.description,140) AS excerpt
       FROM games g
      WHERE g.title LIKE ?
+  ";
+  $params = [$like];
+
+  if ($activeGenre !== '') {
+    $sql .= " AND g.genre = ?";
+    $params[] = $activeGenre;
+  }
+
+  $sql .= "
     UNION ALL
     SELECT 'walk' AS type, w.id, w.title, g.title AS extra, g.image_url AS img, w.difficulty, LEFT(w.overview,140) AS excerpt
       FROM walkthroughs w
       JOIN games g ON g.id = w.game_id
      WHERE w.title LIKE ?
+  ";
+  $params[] = $like;
+
+  if ($activeGenre !== '') {
+    $sql .= " AND g.genre = ?";
+    $params[] = $activeGenre;
+  }
+
+  $sql .= "
     ORDER BY type ASC
     LIMIT 60
-    ",
-    [$like, $like]
-  );
+  ";
+
+  $rows = db_all($mysqli, $sql, $params);
 }
 
 /* ------- Helper highlight (ringan) ------- */
@@ -150,6 +194,30 @@ function diff_cls($d)
   .chip .tag {
     opacity: .8;
     font-size: .85rem
+  }
+
+  /* === Bar kategori game === */
+  .genre-row {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .genre-row .hotchips {
+    margin-top: 0;
+  }
+
+  .genre-label {
+    font-size: .9rem;
+    opacity: .85;
+  }
+
+  .chip.genre-active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #0f0f16;
   }
 
   /* Hasil */
@@ -269,18 +337,38 @@ function diff_cls($d)
     <button class="btn">Cari</button>
   </form>
 
-  <?php if (!empty($hot)): ?>
-    <div class="hotchips" aria-label="Sedang dicari">
-      <?php foreach ($hot as $i => $h):
-        $kw = trim($h['keyword']);
-        if ($kw === '')
-          continue; ?>
-        <a class="chip" href="/arcadia/public/search.php?q=<?= urlencode($kw) ?>"><?= e($kw) ?> <span class="tag">·
-            <?= (int) $h['n'] ?></span></a>
+  <!-- BAR KATEGORI GAME -->
+  <div class="genre-row">
+    <span class="genre-label small">Kategori game:</span>
+    <div class="hotchips">
+      <?php
+      // link "Semua"
+      $baseParams = [];
+      if ($q !== '') {
+        $baseParams['q'] = $q;
+      }
+      $hrefAll = '/arcadia/public/search.php';
+      if ($baseParams) {
+        $hrefAll .= '?' . http_build_query($baseParams);
+      }
+      ?>
+      <a class="chip<?= $activeGenre === '' ? ' genre-active' : '' ?>" href="<?= e($hrefAll) ?>">Semua</a>
+
+      <?php foreach ($genreNames as $genre):
+        $params = ['genre' => $genre];
+        if ($q !== '') {
+          $params['q'] = $q;
+        }
+        $href = '/arcadia/public/search.php?' . http_build_query($params);
+        ?>
+        <a class="chip<?= $activeGenre === $genre ? ' genre-active' : '' ?>" href="<?= e($href) ?>">
+          <?= e($genre) ?>
+        </a>
       <?php endforeach; ?>
-      <a class="chip" href="/arcadia/public/games.php">Jelajahi Game →</a>
     </div>
-  <?php endif; ?>
+  </div>
+
+  <!-- Bar kata kunci populer DIHILANGKAN dari UI -->
 </div>
 
 <datalist id="q_suggest">
@@ -290,9 +378,16 @@ function diff_cls($d)
 </datalist>
 
 <div class="results">
-  <?php if ($q !== ''): ?>
+  <?php if ($hasFilter): ?>
     <div class="card" style="padding:12px 14px;border-radius:12px;margin-bottom:10px;opacity:.9">
-      Menampilkan hasil untuk <strong>"<?= e($q) ?>"</strong> (<?= count($rows) ?>)
+      Menampilkan hasil
+      <?php if ($q !== ''): ?>
+        untuk <strong>"<?= e($q) ?>"</strong>
+      <?php endif; ?>
+      <?php if ($activeGenre !== ''): ?>
+        pada kategori <strong><?= e($activeGenre) ?></strong>
+      <?php endif; ?>
+      (<?= count($rows) ?>)
     </div>
 
     <?php if (!$rows): ?>
@@ -346,7 +441,7 @@ function diff_cls($d)
   <?php else: ?>
     <!-- Empty state awal -->
     <div class="card" style="padding:18px;border-radius:14px;opacity:.92">
-      Ketik judul pada kolom di atas, atau pilih dari kata kunci populer.
+      Ketik judul pada kolom di atas, atau pilih kategori.
     </div>
   <?php endif; ?>
 </div>

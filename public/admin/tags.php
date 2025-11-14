@@ -3,15 +3,28 @@
    Admin • Tags (No urut 1..n, clean & aesthetic)
    ======================================================================== */
 
+
+// ===== BOOT =====
 require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../lib/helpers.php';
+require_once __DIR__ . '/../../lib/auth.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+  session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
+  session_start();
+}
+
 require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/csrf.php';
 require_once __DIR__ . '/../../lib/validation.php';
 
 
-$action = $_GET['action'] ?? 'list';
-if ($_SERVER['REQUEST_METHOD'] === 'POST')
+// --- BACA ACTION: utamakan POST, lalu fallback ke GET ---
+$action = $_POST['action'] ?? ($_GET['action'] ?? 'list');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_verify();
+}
 
 /* ========================= ACTIONS (tanpa output HTML) ========================= */
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -24,8 +37,9 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // kalau tidak unique dan sudah ada, kita cek manual
     if (mysqli_affected_rows($mysqli) === 0) {
       $exists = db_one($mysqli, "SELECT id FROM tags WHERE name=?", [$name], 's');
-      if ($exists)
+      if ($exists) {
         throw new Exception('Tag sudah ada.');
+      }
     }
 
     flash('ok', 'Tag ditambahkan.');
@@ -38,13 +52,14 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
-    $id = positive_int($_POST['id'] ?? 0, 'ID');
+    $id   = positive_int($_POST['id'] ?? 0, 'ID');
     $name = required(str_trim($_POST['name'] ?? ''), 'Nama Tag');
 
     // cegah nama kembar
     $dupe = db_one($mysqli, "SELECT id FROM tags WHERE name=? AND id<>?", [$name, $id], 'si');
-    if ($dupe)
+    if ($dupe) {
       throw new Exception('Nama tag sudah dipakai.');
+    }
 
     db_exec($mysqli, "UPDATE tags SET name=? WHERE id=?", [$name, $id], 'si');
     flash('ok', 'Tag diperbarui.');
@@ -243,9 +258,11 @@ $all_for_cloud = $rows; // pakai ulang
 <div class="card">
   <h1>Tags</h1>
   <?php if ($m = flash('ok')): ?>
-    <div class="alert"><?= e($m) ?></div><?php endif; ?>
+    <div class="alert"><?= e($m) ?></div>
+  <?php endif; ?>
   <?php if ($m = flash('err')): ?>
-    <div class="alert"><?= e($m) ?></div><?php endif; ?>
+    <div class="alert err"><?= e($m) ?></div>
+  <?php endif; ?>
 </div>
 
 <!-- CLOUD PREVIEW -->
@@ -254,8 +271,12 @@ $all_for_cloud = $rows; // pakai ulang
     <h2>Semua Tag <span class="hint">— klik Edit di tabel untuk ubah</span></h2>
     <div class="tag-cloud">
       <?php foreach ($all_for_cloud as $t): ?>
-        <span class="tag-chip"><span class="dot"></span><?= e($t['name']) ?><?php if ($t['used_count']): ?> ·
-            <?= (int) $t['used_count'] ?>    <?php endif; ?></span>
+        <span class="tag-chip">
+          <span class="dot"></span><?= e($t['name']) ?>
+          <?php if ($t['used_count']): ?>
+            · <?= (int) $t['used_count'] ?>
+          <?php endif; ?>
+        </span>
       <?php endforeach; ?>
     </div>
   </div>
@@ -265,7 +286,7 @@ $all_for_cloud = $rows; // pakai ulang
 /* ========================= FORM ========================= */
 if ($action === 'edit') {
   $id = (int) ($_GET['id'] ?? 0);
-  $t = db_one($mysqli, "SELECT * FROM tags WHERE id=?", [$id], 'i');
+  $t  = db_one($mysqli, "SELECT * FROM tags WHERE id=?", [$id], 'i');
   if (!$t) {
     echo '<div class="card">Data tidak ditemukan</div>';
     require __DIR__ . '/_footer.php';
@@ -281,7 +302,9 @@ if ($action === 'edit') {
       <label>Nama Tag
         <input class="input" name="name" value="<?= e($t['name']) ?>" placeholder="contoh: Boss, Weapon, Puzzle">
       </label>
-      <div class="tip">Gunakan nama singkat & mudah dicari (contoh: <em>Boss</em>, <em>Build</em>, <em>Early Game</em>).
+      <div class="tip">
+        Gunakan nama singkat &amp; mudah dicari (contoh:
+        <em>Boss</em>, <em>Build</em>, <em>Early Game</em>).
       </div>
       <button class="btn">Simpan</button>
       <a class="btn gray" href="tags.php">Batal</a>
@@ -327,8 +350,7 @@ if ($action === 'edit') {
         </tr>
       <?php endif; ?>
 
-      <?php $no = 1;
-      foreach ($rows as $r): ?>
+      <?php $no = 1; foreach ($rows as $r): ?>
         <tr>
           <td><span class="badge"><?= $no++ ?></span></td>
           <td><?= e($r['name']) ?></td>
@@ -336,8 +358,11 @@ if ($action === 'edit') {
           <td>
             <div class="actions">
               <a class="chip-btn" href="tags.php?action=edit&id=<?= (int) $r['id'] ?>">Edit</a>
-              <a class="chip-btn chip-del" href="tags.php?action=delete&id=<?= (int) $r['id'] ?>"
-                onclick="return confirm('Hapus tag &quot;<?= e($r['name']) ?>&quot;?')">Hapus</a>
+              <a class="chip-btn chip-del"
+                 href="tags.php?action=delete&id=<?= (int) $r['id'] ?>"
+                 onclick="return confirm('Hapus tag &quot;<?= e($r['name']) ?>&quot;?')">
+                Hapus
+              </a>
             </div>
           </td>
         </tr>
